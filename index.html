@@ -1,0 +1,452 @@
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ethan Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#F9F7F2">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  
+  <!-- Dependencies via CDN (Zero Build Tools Required) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+  <style>
+    body { background-color: #F9F7F2; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+    .active-nav { color: #4F46E5; font-weight: 700; }
+  </style></head><body class="text-stone-800 pb-24 select-none">
+
+  <!-- Header -->
+  <header class="sticky top-0 bg-white/90 backdrop-blur-md border-b border-stone-200 px-4 py-3 flex justify-between items-center z-30">
+    <div>
+      <h1 class="text-lg font-bold text-stone-800 leading-tight">Ethan Tracker</h1>
+      <p class="text-xs text-stone-500 font-medium">Synced • Kamay Family</p>
+    </div>
+    <div id="syncBadge" class="flex items-center space-x-1.5 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-semibold border border-emerald-200">
+      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+      <span>Live Sync</span>
+    </div>
+  </header>
+
+  <!-- Main View Container -->
+  <main class="max-w-md mx-auto p-4 space-y-4">
+    
+    <!-- ================= TAB: DASHBOARD / TRACK ================= -->
+    <section id="viewDashboard" class="space-y-4">
+      
+      <!-- Live Running Timers -->
+      <div>
+        <h2 class="text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">Live Timers</h2>
+        <div class="grid grid-cols-2 gap-2">
+          
+          <!-- Sleep Timer Card -->
+          <div id="cardSleepTimer" class="p-3.5 bg-white rounded-2xl border border-stone-200 shadow-sm flex flex-col justify-between">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-stone-700">Sleep / Nap</span>
+              <button id="btnToggleSleep" class="p-2 rounded-full bg-stone-100 text-stone-700 active:scale-95 transition-transform">
+                <svg id="iconSleepPlay" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </button>
+            </div>
+            <div class="mt-2">
+              <div id="timerSleepDisplay" class="text-xl font-mono font-bold text-stone-800">--:--</div>
+              <span id="labelSleepState" class="text-[10px] text-stone-400 font-medium">Awake</span>
+            </div>
+          </div>
+
+          <!-- Nursing Timer Card -->
+          <div id="cardNursingTimer" class="p-3.5 bg-white rounded-2xl border border-stone-200 shadow-sm flex flex-col justify-between">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-stone-700">Nursing</span>
+              <button id="btnToggleNursing" class="p-2 rounded-full bg-stone-100 text-stone-700 active:scale-95 transition-transform">
+                <svg id="iconNursingPlay" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </button>
+            </div>
+            <div class="mt-2">
+              <div id="timerNursingDisplay" class="text-xl font-mono font-bold text-stone-800">--:--</div>
+              <div class="flex gap-1 mt-1">
+                <button id="btnNursingLeft" class="text-[10px] px-2 py-0.5 rounded bg-stone-100 font-bold text-stone-600">Left</button>
+                <button id="btnNursingRight" class="text-[10px] px-2 py-0.5 rounded bg-stone-100 font-bold text-stone-600">Right</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Diaper Quick-Log -->
+      <div>
+        <h2 class="text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">Diaper Log</h2>
+        <div class="grid grid-cols-3 gap-2">
+          <button onclick="logEvent('diaper', 'Wet')" class="p-3 bg-white border border-stone-200 rounded-xl flex flex-col items-center gap-1 shadow-sm active:scale-95 transition-transform">
+            <span class="text-lg">💧</span>
+            <span class="text-xs font-bold text-stone-700">Wet</span>
+          </button>
+          <button onclick="logEvent('diaper', 'Dirty')" class="p-3 bg-white border border-stone-200 rounded-xl flex flex-col items-center gap-1 shadow-sm active:scale-95 transition-transform">
+            <span class="text-lg">💩</span>
+            <span class="text-xs font-bold text-stone-700">Dirty</span>
+          </button>
+          <button onclick="logEvent('diaper', 'Both')" class="p-3 bg-white border border-stone-200 rounded-xl flex flex-col items-center gap-1 shadow-sm active:scale-95 transition-transform">
+            <span class="text-lg">✨</span>
+            <span class="text-xs font-bold text-stone-700">Both</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Bottle Feed Quick-Log -->
+      <div class="bg-white p-3.5 rounded-2xl border border-stone-200 shadow-sm space-y-2">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-stone-700">Bottle Feeding</span>
+          <div class="flex bg-stone-100 p-0.5 rounded-lg text-[10px] font-bold">
+            <button id="btnFeedMilk" onclick="setFeedType('Breast Milk')" class="px-2 py-0.5 rounded bg-white text-stone-800 shadow-xs">Milk</button>
+            <button id="btnFeedFormula" onclick="setFeedType('Formula')" class="px-2 py-0.5 rounded text-stone-500">Formula</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-5 gap-1.5">
+          <button onclick="logBottle(2)" class="py-2 bg-stone-100 hover:bg-amber-100 rounded-xl text-xs font-bold text-stone-700 active:scale-95">2 oz</button>
+          <button onclick="logBottle(3)" class="py-2 bg-stone-100 hover:bg-amber-100 rounded-xl text-xs font-bold text-stone-700 active:scale-95">3 oz</button>
+          <button onclick="logBottle(4)" class="py-2 bg-stone-100 hover:bg-amber-100 rounded-xl text-xs font-bold text-stone-700 active:scale-95">4 oz</button>
+          <button onclick="logBottle(5)" class="py-2 bg-stone-100 hover:bg-amber-100 rounded-xl text-xs font-bold text-stone-700 active:scale-95">5 oz</button>
+          <button onclick="logBottle(6)" class="py-2 bg-stone-100 hover:bg-amber-100 rounded-xl text-xs font-bold text-stone-700 active:scale-95">6 oz</button>
+        </div>
+      </div>
+
+      <!-- Live Activity Stream (Recent 6 entries) -->
+      <div>
+        <h2 class="text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">Live Timeline Feed</h2>
+        <div id="recentStream" class="space-y-1.5">
+          <div class="text-center py-6 text-xs text-stone-400">Listening for sync events...</div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================= TAB: FULL HISTORY ================= -->
+    <section id="viewHistory" class="space-y-3 hidden">
+      <div class="flex justify-between items-center">
+        <h2 class="text-sm font-bold text-stone-800">Historical Log Entries</h2>
+        <span id="historyCount" class="text-xs text-stone-500 font-mono">0 records</span>
+      </div>
+      <div id="fullHistoryStream" class="space-y-2"></div>
+    </section>
+
+    <!-- ================= TAB: SETTINGS & IMPORT ================= -->
+    <section id="viewSettings" class="space-y-4 hidden">
+      <div class="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm space-y-3">
+        <h2 class="text-sm font-bold text-stone-800 flex items-center gap-1.5">
+          <span>📁</span> 1-Click Nara Baby CSV Migration
+        </h2>
+        <p class="text-xs text-stone-600 leading-relaxed">
+          Export your complete history as a <strong>.csv</strong> file directly from your Nara Baby app. Select the file below to populate Ethan's full 7.5-month history into the database.
+        </p>
+
+        <input type="file" id="csvFileInput" accept=".csv" class="block w-full text-xs text-stone-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-stone-100 file:text-stone-700 hover:file:bg-stone-200 cursor-pointer">
+
+        <div id="importStatusBar" class="hidden p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs font-mono text-stone-700 whitespace-pre-line"></div>
+      </div>
+
+      <div class="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm text-xs space-y-1 text-stone-500">
+        <p class="font-bold text-stone-700">Device Hardware Node</p>
+        <p>• Connected: Cloud Firestore (us-central/nam5)</p>
+        <p>• Multi-Tenant Channel: kamay-family</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Mobile Bottom Navigation Bar -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-stone-200 py-2.5 px-6 flex justify-around items-center z-40">
+    <button onclick="switchTab('dashboard')" id="navBtnDashboard" class="flex flex-col items-center gap-0.5 active-nav">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span class="text-[10px]">Track</span>
+    </button>
+    <button onclick="switchTab('history')" id="navBtnHistory" class="flex flex-col items-center gap-0.5 text-stone-400">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span class="text-[10px]">History</span>
+    </button>
+    <button onclick="switchTab('settings')" id="navBtnSettings" class="flex flex-col items-center gap-0.5 text-stone-400">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <span class="text-[10px]">Import</span>
+    </button>
+  </nav>
+
+  <!-- ================= FIREBASE & APP ENGINE ================= -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { 
+      getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit, writeBatch, doc, updateDoc 
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // Your Explicit Credentials
+    const firebaseConfig = {
+      apiKey: "AIzaSyA62xu8LjoOeCsNAxjIrsedAiraDK5bGXI",
+      authDomain: "ethan-tracker-ddb17.firebaseapp.com",
+      projectId: "ethan-tracker-ddb17",
+      storageBucket: "ethan-tracker-ddb17.firebasestorage.app",
+      messagingSenderId: "106275121782",
+      appId: "1:106275121782:web:52bb169772fc2bf17f4d57",
+      measurementId: "G-WCCETWBNN5"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const FAMILY_PATH = "families/kamay-family/events";
+
+    let activeEvents = [];
+    let runningSleepEvent = null;
+    let runningNursingEvent = null;
+    let selectedFeedType = "Breast Milk";
+    let nursingSide = "Left";
+
+    // --- Tab Switching ---
+    window.switchTab = (tab) => {
+      document.getElementById('viewDashboard').classList.add('hidden');
+      document.getElementById('viewHistory').classList.add('hidden');
+      document.getElementById('viewSettings').classList.add('hidden');
+      document.getElementById('navBtnDashboard').className = "flex flex-col items-center gap-0.5 text-stone-400";
+      document.getElementById('navBtnHistory').className = "flex flex-col items-center gap-0.5 text-stone-400";
+      document.getElementById('navBtnSettings').className = "flex flex-col items-center gap-0.5 text-stone-400";
+
+      if (tab === 'dashboard') {
+        document.getElementById('viewDashboard').classList.remove('hidden');
+        document.getElementById('navBtnDashboard').className = "flex flex-col items-center gap-0.5 active-nav";
+      } else if (tab === 'history') {
+        document.getElementById('viewHistory').classList.remove('hidden');
+        document.getElementById('navBtnHistory').className = "flex flex-col items-center gap-0.5 active-nav";
+      } else if (tab === 'settings') {
+        document.getElementById('viewSettings').classList.remove('hidden');
+        document.getElementById('navBtnSettings').className = "flex flex-col items-center gap-0.5 active-nav";
+      }
+    };
+
+    window.setFeedType = (type) => {
+      selectedFeedType = type;
+      if (type === 'Breast Milk') {
+        document.getElementById('btnFeedMilk').className = "px-2 py-0.5 rounded bg-white text-stone-800 shadow-xs font-bold";
+        document.getElementById('btnFeedFormula').className = "px-2 py-0.5 rounded text-stone-500";
+      } else {
+        document.getElementById('btnFeedFormula').className = "px-2 py-0.5 rounded bg-white text-stone-800 shadow-xs font-bold";
+        document.getElementById('btnFeedMilk').className = "px-2 py-0.5 rounded text-stone-500";
+      }
+    };
+
+    document.getElementById('btnNursingLeft').onclick = () => {
+      nursingSide = "Left";
+      document.getElementById('btnNursingLeft').className = "text-[10px] px-2 py-0.5 rounded bg-amber-500 text-white font-bold";
+      document.getElementById('btnNursingRight').className = "text-[10px] px-2 py-0.5 rounded bg-stone-100 font-bold text-stone-600";
+    };
+    document.getElementById('btnNursingRight').onclick = () => {
+      nursingSide = "Right";
+      document.getElementById('btnNursingRight').className = "text-[10px] px-2 py-0.5 rounded bg-amber-500 text-white font-bold";
+      document.getElementById('btnNursingLeft').className = "text-[10px] px-2 py-0.5 rounded bg-stone-100 font-bold text-stone-600";
+    };
+
+    // --- Logging Functions ---
+    window.logEvent = async (category, subType, extra = {}) => {
+      try {
+        await addDoc(collection(db, FAMILY_PATH), {
+          category,
+          subType,
+          isRunning: false,
+          timestamp: Date.now(),
+          createdAt: new Date().toISOString(),
+          ...extra
+        });
+      } catch (err) {
+        alert("Sync error: " + err.message);
+      }
+    };
+
+    window.logBottle = (oz) => {
+      window.logEvent("feeding", `Bottle (${selectedFeedType})`, { amount: oz });
+    };
+
+    // --- Timers Logic ---
+    document.getElementById('btnToggleSleep').onclick = async () => {
+      if (runningSleepEvent) {
+        const durationMin = Math.max(1, Math.round((Date.now() - runningSleepEvent.timestamp) / 60000));
+        await updateDoc(doc(db, FAMILY_PATH, runningSleepEvent.id), {
+          isRunning: false,
+          durationMinutes: durationMin
+        });
+      } else {
+        await addDoc(collection(db, FAMILY_PATH), {
+          category: "sleep",
+          subType: "Nap / Sleep",
+          isRunning: true,
+          timestamp: Date.now(),
+          createdAt: new Date().toISOString()
+        });
+      }
+    };
+
+    document.getElementById('btnToggleNursing').onclick = async () => {
+      if (runningNursingEvent) {
+        const durationMin = Math.max(1, Math.round((Date.now() - runningNursingEvent.timestamp) / 60000));
+        await updateDoc(doc(db, FAMILY_PATH, runningNursingEvent.id), {
+          isRunning: false,
+          durationMinutes: durationMin
+        });
+      } else {
+        await addDoc(collection(db, FAMILY_PATH), {
+          category: "nursing",
+          subType: `Nursing (${nursingSide})`,
+          isRunning: true,
+          timestamp: Date.now(),
+          createdAt: new Date().toISOString()
+        });
+      }
+    };
+
+    // Timer Ticker Loop
+    setInterval(() => {
+      const now = Date.now();
+
+      // Sleep Timer UI
+      if (runningSleepEvent) {
+        const sec = Math.floor((now - runningSleepEvent.timestamp) / 1000);
+        document.getElementById('timerSleepDisplay').innerText = formatTimer(sec);
+        document.getElementById('labelSleepState').innerText = "Sleeping now";
+        document.getElementById('cardSleepTimer').className = "p-3.5 bg-indigo-50 border border-indigo-200 rounded-2xl shadow-sm flex flex-col justify-between";
+        document.getElementById('btnToggleSleep').className = "p-2 rounded-full bg-indigo-600 text-white";
+        document.getElementById('iconSleepPlay').innerHTML = '<rect x="6" y="6" width="12" height="12"/>';
+      } else {
+        document.getElementById('timerSleepDisplay').innerText = "--:--";
+        document.getElementById('labelSleepState').innerText = "Awake";
+        document.getElementById('cardSleepTimer').className = "p-3.5 bg-white border border-stone-200 rounded-2xl shadow-sm flex flex-col justify-between";
+        document.getElementById('btnToggleSleep').className = "p-2 rounded-full bg-stone-100 text-stone-700";
+        document.getElementById('iconSleepPlay').innerHTML = '<path d="M8 5v14l11-7z"/>';
+      }
+
+      // Nursing Timer UI
+      if (runningNursingEvent) {
+        const sec = Math.floor((now - runningNursingEvent.timestamp) / 1000);
+        document.getElementById('timerNursingDisplay').innerText = formatTimer(sec);
+        document.getElementById('cardNursingTimer').className = "p-3.5 bg-amber-50 border border-amber-200 rounded-2xl shadow-sm flex flex-col justify-between";
+        document.getElementById('btnToggleNursing').className = "p-2 rounded-full bg-amber-600 text-white";
+        document.getElementById('iconNursingPlay').innerHTML = '<rect x="6" y="6" width="12" height="12"/>';
+      } else {
+        document.getElementById('timerNursingDisplay').innerText = "--:--";
+        document.getElementById('cardNursingTimer').className = "p-3.5 bg-white border border-stone-200 rounded-2xl shadow-sm flex flex-col justify-between";
+        document.getElementById('btnToggleNursing').className = "p-2 rounded-full bg-stone-100 text-stone-700";
+        document.getElementById('iconNursingPlay').innerHTML = '<path d="M8 5v14l11-7z"/>';
+      }
+    }, 1000);
+
+    function formatTimer(totalSec) {
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      return `${h > 0 ? h + ':' : ''}${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    // --- Real-time Firestore Listener ---
+    const q = query(collection(db, FAMILY_PATH), orderBy("timestamp", "desc"), limit(200));
+    onSnapshot(q, (snapshot) => {
+      activeEvents = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      // Detect active timers
+      runningSleepEvent = activeEvents.find(e => e.category === 'sleep' && e.isRunning) || null;
+      runningNursingEvent = activeEvents.find(e => e.category === 'nursing' && e.isRunning) || null;
+
+      renderRecentStream(activeEvents.slice(0, 8));
+      renderFullHistory(activeEvents);
+    });
+
+    function renderRecentStream(events) {
+      const container = document.getElementById('recentStream');
+      if (events.length === 0) {
+        container.innerHTML = '<div class="text-center py-6 text-xs text-stone-400">No events logged yet.</div>';
+        return;
+      }
+      container.innerHTML = events.map(e => `
+        <div class="bg-white p-2.5 rounded-xl border border-stone-200 flex justify-between items-center text-xs shadow-2xs">
+          <div class="flex items-center gap-2">
+            <span class="font-bold capitalize text-stone-800">${e.category}</span>
+            <span class="text-stone-500">${e.subType || ''}</span>
+            ${e.amount ? `<span class="font-semibold text-amber-700">${e.amount} oz</span>` : ''}
+            ${e.durationMinutes ? `<span class="text-indigo-600 font-medium">(${e.durationMinutes}m)</span>` : ''}
+          </div>
+          <span class="text-stone-400 font-mono text-[11px]">${new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderFullHistory(events) {
+      document.getElementById('historyCount').innerText = `${events.length} records`;
+      const container = document.getElementById('fullHistoryStream');
+      container.innerHTML = events.map(e => `
+        <div class="bg-white p-3 rounded-xl border border-stone-200 text-xs flex justify-between shadow-2xs">
+          <div>
+            <div class="font-bold text-stone-800 capitalize">${e.category} — ${e.subType}</div>
+            ${e.notes ? `<div class="text-stone-500 mt-0.5">${e.notes}</div>` : ''}
+            ${e.amount ? `<div class="text-amber-700 font-semibold mt-0.5">${e.amount} oz</div>` : ''}
+            ${e.durationMinutes ? `<span class="text-indigo-600 font-medium mt-0.5">${e.durationMinutes} minutes</div>` : ''}
+          </div>
+          <div class="text-right text-stone-400 font-mono text-[11px]">
+            <div>${new Date(e.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}</div>
+            <div>${new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // --- Nara Baby CSV 1-Click Migration ---
+    document.getElementById('csvFileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const statusBox = document.getElementById('importStatusBar');
+      statusBox.classList.remove('hidden');
+      statusBox.innerText = "Parsing Nara Baby CSV archive...";
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async (results) => {
+          try {
+            const rows = results.data;
+            statusBox.innerText = `Found ${rows.length} records. Uploading in batches to Firestore...`;
+
+            let batch = writeBatch(db);
+            let count = 0;
+            let total = 0;
+
+            for (let i = 0; i < rows.length; i++) {
+              const r = rows[i];
+              const parsedDate = new Date(r.Date || r.Timestamp || r.time || Date.now()).getTime();
+
+              const docRef = doc(collection(db, FAMILY_PATH));
+              batch.set(docRef, {
+                category: (r.Type || r.category || 'general').toLowerCase(),
+                subType: r.Details || r.subType || '',
+                durationMinutes: parseFloat(r.Duration) || 0,
+                amount: parseFloat(r.Amount) || 0,
+                notes: r.Notes || '',
+                isRunning: false,
+                timestamp: isNaN(parsedDate) ? Date.now() : parsedDate,
+                imported: true
+              });
+
+              count++;
+              total++;
+
+              if (count === 400) {
+                await batch.commit();
+                batch = writeBatch(db);
+                count = 0;
+                statusBox.innerText = `Uploaded ${total} of ${rows.length} records...`;
+              }
+            }
+
+            if (count > 0) {
+              await batch.commit();
+            }
+
+            statusBox.innerText = `✓ Migration complete! Successfully imported ${total} historical records into your database.`;
+          } catch (err) {
+            statusBox.innerText = `Import error: ${err.message}`;
+          }
+        }
+      });
+    });
+  </script></body></html>
