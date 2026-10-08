@@ -1,0 +1,1986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Ethan Tracker — Nara Baby Edition</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#FBF9F5">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  
+  <!-- Dependencies via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            nara: {
+              bg: '#FBF9F5',
+              card: '#FFFFFF',
+              border: '#ECE7DE',
+              subtle: '#F4F0E8',
+              text: '#2D2823',
+              muted: '#7A7265',
+              lightMuted: '#A39C91',
+              amber: '#D97706',
+              amberBg: '#FEF3C7',
+              amberBorder: '#FDE68A',
+              indigo: '#4F46E5',
+              indigoBg: '#EEF2FF',
+              indigoBorder: '#E0E7FF',
+              teal: '#0D9488',
+              tealBg: '#F0FDFA',
+              tealBorder: '#CCFBF1',
+              rose: '#E11D48',
+              roseBg: '#FFF1F2',
+              roseBorder: '#FFE4E6',
+              peach: '#EA580C',
+              peachBg: '#FFF7ED',
+              peachBorder: '#FFEDD5',
+              purple: '#7C3AED',
+              purpleBg: '#FAF5FF',
+              purpleBorder: '#F3E8FF',
+              sage: '#65A30D',
+              sageBg: '#F7FEE7',
+              gold: '#CA8A04',
+              goldBg: '#FEF9C3',
+              goldBorder: '#FEF08A'
+            }
+          },
+          boxShadow: {
+            'nara': '0 2px 10px rgba(45, 40, 35, 0.04)',
+            'sheet': '0 -8px 24px rgba(45, 40, 35, 0.12)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #FBF9F5;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      color: #2D2823;
+    }
+    .active-tab {
+      color: #2D2823;
+      font-weight: 700;
+    }
+    .active-tab svg {
+      stroke: #2D2823;
+      stroke-width: 2.4;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    /* Smooth transitions for bottom sheet */
+    #modalSheet {
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+  </style>
+</head>
+<body class="bg-nara-bg text-nara-text pb-28 select-none antialiased min-h-screen">
+
+  <!-- ================= TOP HEADER (NARA STYLE) ================= -->
+  <header class="sticky top-0 bg-nara-bg/95 backdrop-blur-md border-b border-nara-border px-4 py-3 flex justify-between items-center z-30">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-900 font-bold text-sm shadow-xs">
+        E
+      </div>
+      <div>
+        <div class="flex items-center space-x-1.5">
+          <h1 class="text-base font-bold text-nara-text leading-tight">Ethan</h1>
+          <span class="text-[10px] text-nara-muted font-semibold bg-nara-subtle px-1.5 py-0.5 rounded-full" id="headerAgeBadge">7m 2w</span>
+        </div>
+        <p class="text-[11px] text-nara-muted font-medium mt-0.5">Kamay Family Hub</p>
+      </div>
+    </div>
+
+    <!-- Live Sync Status Pill -->
+    <div id="syncBadge" class="flex items-center space-x-1.5 bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-full text-[11px] font-semibold border border-emerald-200 shadow-2xs">
+      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+      <span id="syncStatusText">Live Sync</span>
+    </div>
+  </header>
+
+  <!-- ================= MAIN VIEWPORT CONTAINER ================= -->
+  <main class="max-w-md mx-auto p-4 space-y-4">
+
+    <!-- ================= TAB 1: ACTIVITY (NARA HOME TRACKER) ================= -->
+    <div id="tabActivity" class="space-y-4">
+
+      <!-- Nara "Since Last" Quick Status Dashboard -->
+      <section class="bg-white rounded-2xl p-3 border border-nara-border shadow-nara">
+        <div class="flex justify-between items-center mb-2 px-1">
+          <span class="text-[10px] font-bold tracking-wider uppercase text-nara-muted">Activity Summary</span>
+          <span class="text-[10px] text-nara-muted font-medium" id="sinceLastRefreshed">Updated Live</span>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div class="bg-nara-subtle/50 rounded-xl p-2 border border-nara-border/60">
+            <span class="text-xs">🍼</span>
+            <div class="text-[10px] text-nara-muted font-semibold mt-0.5">Last Feed</div>
+            <div id="statLastFeed" class="text-xs font-bold text-nara-text mt-0.5 truncate">--</div>
+            <div id="statLastFeedDetail" class="text-[9px] text-nara-muted truncate">--</div>
+          </div>
+          <div class="bg-nara-subtle/50 rounded-xl p-2 border border-nara-border/60">
+            <span class="text-xs">💤</span>
+            <div class="text-[10px] text-nara-muted font-semibold mt-0.5">Wake Window</div>
+            <div id="statWakeWindow" class="text-xs font-bold text-nara-text mt-0.5 truncate">--</div>
+            <div id="statWakeDetail" class="text-[9px] text-nara-muted truncate">--</div>
+          </div>
+          <div class="bg-nara-subtle/50 rounded-xl p-2 border border-nara-border/60">
+            <span class="text-xs">💧</span>
+            <div class="text-[10px] text-nara-muted font-semibold mt-0.5">Last Diaper</div>
+            <div id="statLastDiaper" class="text-xs font-bold text-nara-text mt-0.5 truncate">--</div>
+            <div id="statLastDiaperDetail" class="text-[9px] text-nara-muted truncate">--</div>
+          </div>
+        </div>
+
+        <!-- 7.5 Month Development Insight Callout -->
+        <div class="mt-2.5 pt-2 border-t border-nara-border/60 flex items-center justify-between text-[11px] text-nara-muted px-1">
+          <span>7.5m Target: 2–3 naps • 3–3.5h wake window</span>
+          <span class="font-bold text-amber-800">Ethan</span>
+        </div>
+      </section>
+
+      <!-- Active Running Timers (Persistent Sticky Banner if Active) -->
+      <section id="activeTimersContainer" class="space-y-2 hidden">
+        <!-- Dynamically injected when Sleep, Nursing, or Pumping timers are active -->
+      </section>
+
+      <!-- Primary Nara Activity Tiles (9 Full Categories) -->
+      <section>
+        <div class="flex justify-between items-center mb-2 px-1">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-nara-muted">Log An Activity</h2>
+          <button onclick="openCustomizeActivitiesModal()" class="text-[11px] font-bold text-amber-800 hover:text-amber-900">Edit Activities ⚙️</button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5" id="activityTilesGrid">
+
+          <!-- 1. Bottle Feeding -->
+          <button data-cat="bottle" onclick="openLoggerModal('bottle')" class="bg-white border border-nara-border hover:border-amber-300 p-3.5 rounded-2xl flex items-center space-x-3 text-left shadow-nara active:scale-[0.98] transition">
+            <div class="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-lg">
+              🍼
+            </div>
+            <div>
+              <div class="text-xs font-bold text-nara-text">Bottle</div>
+              <div class="text-[10px] text-nara-muted">Formula or milk</div>
+            </div>
+          </button>
+
+          <!-- 2. Breastfeeding / Nursing -->
+          <button data-cat="nursing" onclick="openLoggerModal('nursing')" class="bg-white border border-nara-border hover:border-rose-300 p-3.5 rounded-2xl flex items-center space-x-3 text-left shadow-nara active:scale-[0.98] transition">
+            <div class="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-lg">
+              🤱
+            </div>
+            <div>
+              <div class="text-xs font-bold text-nara-text">Nursing</div>
+              <div class="text-[10px] text-nara-muted" id="tileNursingLastSide">Left & right timer</div>
+            </div>
+          </button>
+
+          <!-- 3. Sleep / Nap -->
+          <button data-cat="sleep" onclick="openLoggerModal('sleep')" class="bg-white border border-nara-border hover:border-indigo-300 p-3.5 rounded-2xl flex items-center space-x-3 text-left shadow-nara active:scale-[0.98] transition">
+            <div class="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-lg">
+              💤
+            </div>
+            <div>
+              <div class="text-xs font-bold text-nara-text">Sleep</div>
+              <div class="text-[10px] text-nara-muted">Nap or night sleep</div>
+            </div>
+          </button>
+
+          <!-- 4. Diaper -->
+          <button data-cat="diaper" onclick="openLoggerModal('diaper')" class="bg-white border border-nara-border hover:border-teal-300 p-3.5 rounded-2xl flex items-center space-x-3 text-left shadow-nara active:scale-[0.98] transition">
+            <div class="w-10 h-10 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-lg">
+              💧
+            </div>
+            <div>
+              <div class="text-xs font-bold text-nara-text">Diaper</div>
+              <div class="text-[10px] text-nara-muted">Wet, dirty, stool & rash</div>
+            </div>
+          </button>
+
+          <!-- 5. Solids / First Foods (Essential for Ethan at 7.5 mos) -->
+          <button data-cat="solids" onclick="openLoggerModal('solids')" class="bg-white border border-nara-border hover:border-orange-300 p-3.5 rounded-2xl flex items-center space-x-3 text-left shadow-nara active:scale-[0.98] transition">
+            <div class="w-10 h-10 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center text-lg">
+              🥣
+            </div>
+            <div>
+              <div class="text-xs font-bold text-nara-text">Solids</div>
+              <div class="text-[10px] text-nara-muted">Meals & reactions</div>
+            </div>
+          </button>
+
+          <!-- 6. Pumping -->
+          <button data-cat="pumping" onclick="openLoggerModal('pumping')" class="bg-white border border-nara-border hover:border-purple-300 p-3.5 rounded-2xl flex items-center space-x-3 text-left shadow-nara active:scale-[0.98] transition">
+            <div class="w-10 h-10 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center text-lg">
+              ⚡
+            </div>
+            <div>
+              <div class="text-xs font-bold text-nara-text">Pumping</div>
+              <div class="text-[10px] text-nara-muted">Left / right output</div>
+            </div>
+          </button>
+
+          <!-- 7. Health & Medication -->
+          <button data-cat="health" onclick="openLoggerModal('health')" class="bg-white border border-nara-border hover:border-rose-300 p-3.5 rounded-2xl flex items-center space-x-3 text-left shadow-nara active:scale-[0.98] transition">
+            <div class="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-lg">
+              💊
+            </div>
+            <div>
+              <div class="text-xs font-bold text-nara-text">Health / Meds</div>
+              <div class="text-[10px] text-nara-muted">Meds, temp, vaccine</div>
+            </div>
+          </button>
+
+          <!-- 8. Routine / Tummy Time -->
+          <button data-cat="routine" onclick="openLoggerModal('routine')" class="bg-white border border-nara-border hover:border-stone-400 p-3.5 rounded-2xl flex items-center space-x-3 text-left shadow-nara active:scale-[0.98] transition">
+            <div class="w-10 h-10 rounded-xl bg-stone-100 border border-stone-200 flex items-center justify-center text-lg">
+              🧸
+            </div>
+            <div>
+              <div class="text-xs font-bold text-nara-text">Routine</div>
+              <div class="text-[10px] text-nara-muted">Tummy time, bath</div>
+            </div>
+          </button>
+
+          <!-- 9. Growth & Measurements -->
+          <button data-cat="growth" onclick="openLoggerModal('growth')" class="bg-white border border-nara-border hover:border-yellow-400 p-3.5 rounded-2xl flex items-center space-x-3 text-left shadow-nara active:scale-[0.98] transition col-span-2">
+            <div class="w-10 h-10 rounded-xl bg-yellow-50 border border-yellow-200 flex items-center justify-center text-lg">
+              📏
+            </div>
+            <div>
+              <div class="text-xs font-bold text-nara-text">Growth & Pediatric Vitals</div>
+              <div class="text-[10px] text-nara-muted">Weight, length/height & head circumference</div>
+            </div>
+          </button>
+
+        </div>
+      </section>
+
+      <!-- Today's Recent Stream -->
+      <section class="space-y-2">
+        <div class="flex justify-between items-center px-1">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-nara-muted">Recent Timeline Feed</h2>
+          <button onclick="switchTab('history')" class="text-xs font-semibold text-amber-800 hover:text-amber-900">View Full History →</button>
+        </div>
+        <div id="activityRecentList" class="space-y-2">
+          <div class="text-center py-6 text-xs text-nara-muted">Listening for live updates...</div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ================= TAB 2: HISTORY (DAY-GROUPED TIMELINE) ================= -->
+    <div id="tabHistory" class="space-y-3 hidden">
+      <div class="flex justify-between items-center px-1">
+        <h2 class="text-sm font-bold text-nara-text">Historical Timeline</h2>
+        <span id="historyTotalCount" class="text-xs text-nara-muted font-mono">0 records</span>
+      </div>
+
+      <!-- Category Filter Pills (Nara Baby History Filters) -->
+      <div class="flex space-x-1.5 overflow-x-auto no-scrollbar py-1">
+        <button onclick="filterHistoryCategory('all')" id="btnFilter_all" class="px-3 py-1 rounded-full text-xs font-bold bg-stone-800 text-white shadow-2xs whitespace-nowrap">All</button>
+        <button onclick="filterHistoryCategory('bottle')" id="btnFilter_bottle" class="px-3 py-1 rounded-full text-xs font-medium bg-white border border-nara-border text-nara-muted hover:text-nara-text whitespace-nowrap">🍼 Bottle</button>
+        <button onclick="filterHistoryCategory('nursing')" id="btnFilter_nursing" class="px-3 py-1 rounded-full text-xs font-medium bg-white border border-nara-border text-nara-muted hover:text-nara-text whitespace-nowrap">🤱 Nursing</button>
+        <button onclick="filterHistoryCategory('sleep')" id="btnFilter_sleep" class="px-3 py-1 rounded-full text-xs font-medium bg-white border border-nara-border text-nara-muted hover:text-nara-text whitespace-nowrap">💤 Sleep</button>
+        <button onclick="filterHistoryCategory('diaper')" id="btnFilter_diaper" class="px-3 py-1 rounded-full text-xs font-medium bg-white border border-nara-border text-nara-muted hover:text-nara-text whitespace-nowrap">💧 Diaper</button>
+        <button onclick="filterHistoryCategory('solids')" id="btnFilter_solids" class="px-3 py-1 rounded-full text-xs font-medium bg-white border border-nara-border text-nara-muted hover:text-nara-text whitespace-nowrap">🥣 Solids</button>
+        <button onclick="filterHistoryCategory('health')" id="btnFilter_health" class="px-3 py-1 rounded-full text-xs font-medium bg-white border border-nara-border text-nara-muted hover:text-nara-text whitespace-nowrap">💊 Health</button>
+        <button onclick="filterHistoryCategory('growth')" id="btnFilter_growth" class="px-3 py-1 rounded-full text-xs font-medium bg-white border border-nara-border text-nara-muted hover:text-nara-text whitespace-nowrap">📏 Growth</button>
+      </div>
+
+      <!-- Feed Container (Grouped by Date) -->
+      <div id="historyDayGroupedFeed" class="space-y-4 pt-1">
+        <div class="text-center py-10 text-xs text-nara-muted">Loading timeline entries...</div>
+      </div>
+    </div>
+
+    <!-- ================= TAB 3: TRENDS (7 & 14-DAY ANALYTICS) ================= -->
+    <div id="tabTrends" class="space-y-4 hidden">
+      <div class="flex justify-between items-center px-1">
+        <div>
+          <h2 class="text-sm font-bold text-nara-text">Trends & Sleep Patterns</h2>
+          <p class="text-[11px] text-nara-muted">Real-time statistics computed from Ethan's logs</p>
+        </div>
+        <div class="flex bg-nara-subtle p-0.5 rounded-lg text-[10px] font-bold">
+          <button onclick="setTrendsRange(7)" id="btnTrend7" class="px-2.5 py-1 rounded-md bg-white text-nara-text shadow-2xs">7 Days</button>
+          <button onclick="setTrendsRange(14)" id="btnTrend14" class="px-2.5 py-1 rounded-md text-nara-muted">14 Days</button>
+        </div>
+      </div>
+
+      <!-- Sleep Summary Chart (Day Sleep vs Night Sleep) -->
+      <div class="bg-white p-4 rounded-2xl border border-nara-border shadow-nara space-y-2">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-nara-text flex items-center gap-1.5">
+            <span>💤</span> Total Sleep & Nap Split
+          </span>
+          <span id="trendAvgSleep" class="text-[11px] text-indigo-700 font-semibold">Avg: --</span>
+        </div>
+        <div id="chartSleepBars" class="h-32 flex items-end justify-between pt-4 pb-1 px-1 border-b border-nara-border/60 text-center gap-1">
+          <!-- Injected via JS -->
+        </div>
+        <div class="flex justify-between text-[10px] text-nara-muted px-1" id="chartSleepLabels">
+          <!-- Day labels -->
+        </div>
+        <div class="flex justify-center gap-4 text-[10px] text-nara-muted pt-1">
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-xs bg-indigo-500"></span> Night Sleep</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-xs bg-indigo-300"></span> Day Naps</span>
+        </div>
+      </div>
+
+      <!-- Bottle Feeding Chart -->
+      <div class="bg-white p-4 rounded-2xl border border-nara-border shadow-nara space-y-2">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-nara-text flex items-center gap-1.5">
+            <span>🍼</span> Bottle Feeding Volume
+          </span>
+          <span id="trendAvgBottle" class="text-[11px] text-amber-700 font-semibold">Avg: --</span>
+        </div>
+        <div id="chartBottleBars" class="h-28 flex items-end justify-between pt-4 pb-1 px-1 border-b border-nara-border/60 text-center gap-1">
+          <!-- Injected via JS -->
+        </div>
+        <div class="flex justify-between text-[10px] text-nara-muted px-1" id="chartBottleLabels">
+          <!-- Day labels -->
+        </div>
+      </div>
+
+      <!-- Diaper Frequency Chart -->
+      <div class="bg-white p-4 rounded-2xl border border-nara-border shadow-nara space-y-2">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-nara-text flex items-center gap-1.5">
+            <span>💧</span> Diaper Changes
+          </span>
+          <span id="trendAvgDiaper" class="text-[11px] text-teal-700 font-semibold">Avg: -- / day</span>
+        </div>
+        <div id="chartDiaperBars" class="h-24 flex items-end justify-between pt-4 pb-1 px-1 border-b border-nara-border/60 text-center gap-1">
+          <!-- Injected via JS -->
+        </div>
+        <div class="flex justify-between text-[10px] text-nara-muted px-1" id="chartDiaperLabels">
+          <!-- Day labels -->
+        </div>
+      </div>
+
+      <!-- Growth Summary Card -->
+      <div class="bg-white p-4 rounded-2xl border border-nara-border shadow-nara space-y-2">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-nara-text flex items-center gap-1.5">
+            <span>📏</span> Latest Growth Measurements
+          </span>
+          <button onclick="openLoggerModal('growth')" class="text-[11px] text-amber-800 font-bold hover:underline">+ Log Growth</button>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center pt-1" id="trendGrowthMetrics">
+          <div class="p-2 bg-nara-subtle/50 rounded-xl border border-nara-border/60">
+            <span class="text-[10px] text-nara-muted block font-semibold">Weight</span>
+            <span id="growthMetricWeight" class="text-xs font-bold text-nara-text">--</span>
+          </div>
+          <div class="p-2 bg-nara-subtle/50 rounded-xl border border-nara-border/60">
+            <span class="text-[10px] text-nara-muted block font-semibold">Length</span>
+            <span id="growthMetricHeight" class="text-xs font-bold text-nara-text">--</span>
+          </div>
+          <div class="p-2 bg-nara-subtle/50 rounded-xl border border-nara-border/60">
+            <span class="text-[10px] text-nara-muted block font-semibold">Head Circ.</span>
+            <span id="growthMetricHead" class="text-xs font-bold text-nara-text">--</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================= TAB 4: PROFILE & SETTINGS ================= -->
+    <div id="tabSettings" class="space-y-4 hidden">
+      
+      <!-- Baby Profile Info -->
+      <div class="bg-white p-4 rounded-2xl border border-nara-border shadow-nara space-y-3">
+        <div class="flex items-center space-x-3">
+          <div class="w-12 h-12 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center text-xl font-bold text-amber-800">
+            E
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-nara-text">Ethan Kamay</h3>
+            <p class="text-xs text-nara-muted" id="settingsDetailAge">Born Feb 20, 2026 • 7.5 months</p>
+          </div>
+        </div>
+        <div class="border-t border-nara-border/70 pt-2.5 text-xs space-y-1.5 text-nara-muted">
+          <div class="flex justify-between">
+            <span>Primary Caregivers:</span>
+            <span class="font-semibold text-nara-text">Dan & Melinda</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Sync Architecture:</span>
+            <span class="font-semibold text-nara-text">Google Cloud Firestore (nam5)</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Family Channel:</span>
+            <span class="font-semibold text-nara-text">families/kamay-family</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Unit System:</span>
+            <div class="flex gap-2">
+              <button onclick="setGlobalUnits('oz')" id="btnUnitOz" class="font-bold text-amber-800 underline">oz / lbs</button>
+              <span>•</span>
+              <button onclick="setGlobalUnits('ml')" id="btnUnitMl" class="text-nara-muted">mL / kg</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nara Baby 1-Click CSV Migration & Backup -->
+      <div class="bg-white p-4 rounded-2xl border border-nara-border shadow-nara space-y-3">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-nara-muted flex items-center gap-1.5">
+          <span>📁</span> Nara Baby CSV Migration & Backup
+        </h3>
+        <p class="text-xs text-nara-muted leading-relaxed">
+          Import your complete historical export directly from your Nara Baby app, or download a full Firestore backup anytime.
+        </p>
+
+        <div class="space-y-2">
+          <label class="block text-[11px] font-bold text-nara-text">1-Click Nara Baby CSV Import</label>
+          <input type="file" id="csvFileInput" accept=".csv" class="block w-full text-xs text-nara-muted file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-nara-subtle file:text-nara-text hover:file:bg-amber-100 cursor-pointer">
+          <div id="importStatusBar" class="hidden p-3 bg-nara-subtle rounded-xl text-xs font-mono text-nara-text whitespace-pre-line border border-nara-border"></div>
+        </div>
+
+        <div class="pt-2 border-t border-nara-border/70">
+          <button onclick="exportCurrentDataCSV()" class="w-full py-2.5 bg-nara-subtle hover:bg-stone-200 border border-nara-border rounded-xl text-xs font-bold text-nara-text active:scale-95 transition">
+            Export Complete Database to CSV
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ================= NARA BOTTOM NAVIGATION BAR ================= -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-nara-border py-2 px-6 flex justify-around items-center z-40">
+    <button onclick="switchTab('activity')" id="navBtnActivity" class="flex flex-col items-center gap-1 active-tab">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span class="text-[10px]">Activity</span>
+    </button>
+    <button onclick="switchTab('history')" id="navBtnHistory" class="flex flex-col items-center gap-1 text-nara-muted">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <span class="text-[10px]">History</span>
+    </button>
+    <button onclick="switchTab('trends')" id="navBtnTrends" class="flex flex-col items-center gap-1 text-nara-muted">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span class="text-[10px]">Trends</span>
+    </button>
+    <button onclick="switchTab('settings')" id="navBtnSettings" class="flex flex-col items-center gap-1 text-nara-muted">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span class="text-[10px]">Settings</span>
+    </button>
+  </nav>
+
+  <!-- ================= NARA SLIDING BOTTOM SHEET MODAL ================= -->
+  <div id="modalBackdrop" class="fixed inset-0 bg-stone-900/40 backdrop-blur-xs z-50 hidden transition-opacity opacity-0" onclick="closeLoggerModal()">
+    <div id="modalSheet" class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white rounded-t-3xl p-5 shadow-sheet z-50 max-h-[92vh] overflow-y-auto no-scrollbar transform translate-y-full" onclick="event.stopPropagation()">
+
+      <!-- Sheet Header -->
+      <div class="flex justify-between items-center pb-3 border-b border-nara-border">
+        <div>
+          <h2 id="modalTitle" class="text-base font-bold text-nara-text leading-tight">Log Activity</h2>
+          <p id="modalSubtitle" class="text-xs text-nara-muted">Configure entry details</p>
+        </div>
+        <button onclick="closeLoggerModal()" class="w-8 h-8 rounded-full bg-nara-subtle text-nara-muted flex items-center justify-center font-bold text-sm active:scale-95">
+          ✕
+        </button>
+      </div>
+
+      <!-- Time & Retroactive Adjustment Bar -->
+      <div class="my-3.5 p-2.5 bg-nara-subtle/70 rounded-2xl border border-nara-border/60 flex flex-col gap-2">
+        <div class="flex justify-between items-center text-xs">
+          <span class="font-bold text-nara-text flex items-center gap-1">
+            <span>🕒</span> Time of Event
+          </span>
+          <input type="datetime-local" id="modalInputTimestamp" class="bg-white border border-nara-border rounded-lg px-2 py-1 text-xs font-mono text-nara-text">
+        </div>
+        <!-- Quick time adjust buttons -->
+        <div class="flex gap-1.5 text-[10px] font-semibold text-nara-muted overflow-x-auto no-scrollbar">
+          <button type="button" onclick="adjustModalTime(0)" class="px-2.5 py-0.5 rounded-md bg-white border border-nara-border active:scale-95">Now</button>
+          <button type="button" onclick="adjustModalTime(-15)" class="px-2.5 py-0.5 rounded-md bg-white border border-nara-border active:scale-95">-15m</button>
+          <button type="button" onclick="adjustModalTime(-30)" class="px-2.5 py-0.5 rounded-md bg-white border border-nara-border active:scale-95">-30m</button>
+          <button type="button" onclick="adjustModalTime(-60)" class="px-2.5 py-0.5 rounded-md bg-white border border-nara-border active:scale-95">-1 hr</button>
+          <button type="button" onclick="adjustModalTime(-120)" class="px-2.5 py-0.5 rounded-md bg-white border border-nara-border active:scale-95">-2 hrs</button>
+        </div>
+      </div>
+
+      <!-- Dynamic Form Container -->
+      <form id="modalForm" onsubmit="handleModalSave(event)" class="space-y-4">
+        <div id="modalDynamicFields" class="space-y-4">
+          <!-- Injected via JavaScript depending on category -->
+        </div>
+
+        <!-- Notes Field (Available for all categories) -->
+        <div>
+          <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Notes (Optional)</label>
+          <input type="text" id="modalInputNotes" placeholder="Add observations or pediatrician notes..." class="w-full text-xs p-2.5 bg-nara-subtle/40 rounded-xl border border-nara-border text-nara-text focus:outline-none focus:border-amber-400">
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="space-y-2 pt-2">
+          <button type="submit" id="btnModalSave" class="w-full py-3.5 bg-stone-800 hover:bg-stone-900 text-white rounded-2xl text-xs font-bold shadow-sm active:scale-[0.99] transition">
+            Save Activity
+          </button>
+          
+          <button type="button" id="btnModalDelete" onclick="handleModalDelete()" class="w-full py-2.5 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl hidden transition">
+            Delete This Record
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ================= CUSTOMIZE ACTIVITIES MODAL ================= -->
+  <div id="customizeModalBackdrop" class="fixed inset-0 bg-stone-900/40 backdrop-blur-xs z-50 hidden transition-opacity opacity-0" onclick="closeCustomizeActivitiesModal()">
+    <div id="customizeModalSheet" class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white rounded-t-3xl p-5 shadow-sheet z-50 max-h-[85vh] overflow-y-auto no-scrollbar transform translate-y-full" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center pb-3 border-b border-nara-border">
+        <div>
+          <h2 class="text-base font-bold text-nara-text">Customize Activities</h2>
+          <p class="text-xs text-nara-muted">Toggle which activities appear on your main screen</p>
+        </div>
+        <button onclick="closeCustomizeActivitiesModal()" class="w-8 h-8 rounded-full bg-nara-subtle text-nara-muted flex items-center justify-center font-bold text-sm">✕</button>
+      </div>
+
+      <div class="divide-y divide-nara-border/60 py-2 text-xs">
+        <label class="flex justify-between items-center py-2.5">
+          <span class="font-semibold text-nara-text flex items-center gap-2"><span>🍼</span> Bottle Feeding</span>
+          <input type="checkbox" id="toggle_cat_bottle" checked onchange="saveActivityPreferences()" class="w-4 h-4 rounded text-amber-600">
+        </label>
+        <label class="flex justify-between items-center py-2.5">
+          <span class="font-semibold text-nara-text flex items-center gap-2"><span>🤱</span> Breastfeeding</span>
+          <input type="checkbox" id="toggle_cat_nursing" checked onchange="saveActivityPreferences()" class="w-4 h-4 rounded text-amber-600">
+        </label>
+        <label class="flex justify-between items-center py-2.5">
+          <span class="font-semibold text-nara-text flex items-center gap-2"><span>💤</span> Sleep / Naps</span>
+          <input type="checkbox" id="toggle_cat_sleep" checked onchange="saveActivityPreferences()" class="w-4 h-4 rounded text-amber-600">
+        </label>
+        <label class="flex justify-between items-center py-2.5">
+          <span class="font-semibold text-nara-text flex items-center gap-2"><span>💧</span> Diaper Changes</span>
+          <input type="checkbox" id="toggle_cat_diaper" checked onchange="saveActivityPreferences()" class="w-4 h-4 rounded text-amber-600">
+        </label>
+        <label class="flex justify-between items-center py-2.5">
+          <span class="font-semibold text-nara-text flex items-center gap-2"><span>🥣</span> Solids & First Foods</span>
+          <input type="checkbox" id="toggle_cat_solids" checked onchange="saveActivityPreferences()" class="w-4 h-4 rounded text-amber-600">
+        </label>
+        <label class="flex justify-between items-center py-2.5">
+          <span class="font-semibold text-nara-text flex items-center gap-2"><span>⚡</span> Pumping</span>
+          <input type="checkbox" id="toggle_cat_pumping" checked onchange="saveActivityPreferences()" class="w-4 h-4 rounded text-amber-600">
+        </label>
+        <label class="flex justify-between items-center py-2.5">
+          <span class="font-semibold text-nara-text flex items-center gap-2"><span>💊</span> Health & Medications</span>
+          <input type="checkbox" id="toggle_cat_health" checked onchange="saveActivityPreferences()" class="w-4 h-4 rounded text-amber-600">
+        </label>
+        <label class="flex justify-between items-center py-2.5">
+          <span class="font-semibold text-nara-text flex items-center gap-2"><span>🧸</span> Routine & Tummy Time</span>
+          <input type="checkbox" id="toggle_cat_routine" checked onchange="saveActivityPreferences()" class="w-4 h-4 rounded text-amber-600">
+        </label>
+        <label class="flex justify-between items-center py-2.5">
+          <span class="font-semibold text-nara-text flex items-center gap-2"><span>📏</span> Growth & Measurements</span>
+          <input type="checkbox" id="toggle_cat_growth" checked onchange="saveActivityPreferences()" class="w-4 h-4 rounded text-amber-600">
+        </label>
+      </div>
+
+      <button onclick="closeCustomizeActivitiesModal()" class="w-full mt-3 py-3 bg-stone-800 text-white font-bold text-xs rounded-xl">Done</button>
+    </div>
+  </div>
+
+  <!-- ================= FLOATING 5-SECOND UNDO TOAST ================= -->
+  <div id="undoToast" class="fixed bottom-20 left-4 right-4 max-w-md mx-auto bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-xl flex justify-between items-center z-50 transform translate-y-24 opacity-0 transition-all duration-300">
+    <div class="flex items-center space-x-2 text-xs">
+      <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+      <span id="undoToastText">Activity saved</span>
+    </div>
+    <button id="undoToastActionBtn" onclick="executeUndoLastAction()" class="text-xs font-bold text-amber-300 hover:text-amber-200 px-2.5 py-1 rounded-lg bg-stone-800 active:scale-95">
+      Undo
+    </button>
+  </div>
+
+  <!-- ================= FIREBASE & APP ENGINE ================= -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { 
+      getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit, writeBatch, doc, updateDoc, deleteDoc 
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // Pre-wired Firebase Credentials
+    const firebaseConfig = {
+      apiKey: "AIzaSyA62xu8LjoOeCsNAxjIrsedAiraDK5bGXI",
+      authDomain: "ethan-tracker-ddb17.firebaseapp.com",
+      projectId: "ethan-tracker-ddb17",
+      storageBucket: "ethan-tracker-ddb17.firebasestorage.app",
+      messagingSenderId: "106275121782",
+      appId: "1:106275121782:web:52bb169772fc2bf17f4d57",
+      measurementId: "G-WCCETWBNN5"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const FAMILY_PATH = "families/kamay-family/events";
+
+    // Application State
+    let allEvents = [];
+    let activeEditingEventId = null;
+    let currentModalCategory = null;
+    let lastCreatedDocId = null;
+    let undoTimeout = null;
+    let currentHistoryFilter = "all";
+    let trendsRangeDays = 7;
+    let globalUnit = localStorage.getItem("nara_unit") || "oz";
+
+    // Active Timers State
+    let runningSleepEvent = null;
+    let runningNursingEvent = null;
+    let runningPumpingEvent = null;
+
+    // Temporary form selections
+    let selectedDiaperStatus = "Wet";
+    let selectedStoolColor = "Yellow";
+    let selectedStoolConsistency = "Soft";
+    let selectedBottleAmount = 4.0;
+    let selectedBottleType = "Formula";
+    let selectedNursingSide = "Left";
+    let selectedSolidsMeal = "Breakfast";
+    let selectedSolidsReaction = "Loved it";
+    let selectedTempRoute = "Forehead";
+
+    // --- Age Calculator ---
+    function updateAgeDisplay() {
+      const birthDate = new Date("2026-02-20T00:00:00");
+      const now = new Date();
+      const diffMs = now - birthDate;
+      const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const months = Math.floor(totalDays / 30.4375);
+      const remDays = Math.floor(totalDays % 30.4375);
+      const weeks = Math.floor(remDays / 7);
+
+      const ageText = `${months}m ${weeks}w`;
+      document.getElementById('headerAgeBadge').innerText = ageText;
+      document.getElementById('settingsDetailAge').innerText = `Born Feb 20, 2026 • ${months} months, ${weeks} weeks (${totalDays} days)`;
+    }
+    updateAgeDisplay();
+
+    // --- Global Units Switcher (oz vs. mL) ---
+    window.setGlobalUnits = (unit) => {
+      globalUnit = unit;
+      localStorage.setItem("nara_unit", unit);
+      if (unit === 'oz') {
+        document.getElementById('btnUnitOz').className = "font-bold text-amber-800 underline";
+        document.getElementById('btnUnitMl').className = "text-nara-muted";
+      } else {
+        document.getElementById('btnUnitMl').className = "font-bold text-amber-800 underline";
+        document.getElementById('btnUnitOz').className = "text-nara-muted";
+      }
+      renderRecentList();
+      renderDayGroupedHistory();
+      renderTrendsCharts();
+    };
+
+    // --- Navigation Tab Switching ---
+    window.switchTab = (tab) => {
+      ['tabActivity', 'tabHistory', 'tabTrends', 'tabSettings'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      ['navBtnActivity', 'navBtnHistory', 'navBtnTrends', 'navBtnSettings'].forEach(id => {
+        document.getElementById(id).className = "flex flex-col items-center gap-1 text-nara-muted";
+      });
+
+      if (tab === 'activity') {
+        document.getElementById('tabActivity').classList.remove('hidden');
+        document.getElementById('navBtnActivity').className = "flex flex-col items-center gap-1 active-tab";
+      } else if (tab === 'history') {
+        document.getElementById('tabHistory').classList.remove('hidden');
+        document.getElementById('navBtnHistory').className = "flex flex-col items-center gap-1 active-tab";
+        renderDayGroupedHistory();
+      } else if (tab === 'trends') {
+        document.getElementById('tabTrends').classList.remove('hidden');
+        document.getElementById('navBtnTrends').className = "flex flex-col items-center gap-1 active-tab";
+        renderTrendsCharts();
+      } else if (tab === 'settings') {
+        document.getElementById('tabSettings').classList.remove('hidden');
+        document.getElementById('navBtnSettings').className = "flex flex-col items-center gap-1 active-tab";
+      }
+    };
+
+    // --- Firestore Realtime Snapshot Listener ---
+    const q = query(collection(db, FAMILY_PATH), orderBy("timestamp", "desc"), limit(500));
+    onSnapshot(q, (snapshot) => {
+      allEvents = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      // Detect active timers
+      runningSleepEvent = allEvents.find(e => e.category === 'sleep' && e.isRunning) || null;
+      runningNursingEvent = allEvents.find(e => e.category === 'nursing' && e.isRunning) || null;
+      runningPumpingEvent = allEvents.find(e => e.category === 'pumping' && e.isRunning) || null;
+
+      // Update Last-side nursing badge on Activity tile
+      const lastNursing = allEvents.find(e => e.category === 'nursing' && !e.isRunning);
+      if (lastNursing && lastNursing.subType) {
+        const side = lastNursing.subType.includes('Right') ? 'Right' : 'Left';
+        document.getElementById('tileNursingLastSide').innerText = `Last ended on: ${side}`;
+      }
+
+      renderActiveTimers();
+      updateSinceLastStats();
+      renderRecentList();
+      renderDayGroupedHistory();
+      renderTrendsCharts();
+      updateLatestGrowthCard();
+    });
+
+    // --- Active Timers Manager ---
+    function renderActiveTimers() {
+      const container = document.getElementById('activeTimersContainer');
+      const activeList = [runningSleepEvent, runningNursingEvent, runningPumpingEvent].filter(Boolean);
+
+      if (activeList.length === 0) {
+        container.classList.add('hidden');
+        container.innerHTML = '';
+        return;
+      }
+
+      container.classList.remove('hidden');
+      container.innerHTML = activeList.map(e => {
+        let badgeColor = "indigo";
+        let icon = "💤";
+        let title = "Sleep / Nap in Progress";
+        if (e.category === 'nursing') {
+          badgeColor = "rose";
+          icon = "🤱";
+          title = `Nursing (${e.subType || 'Left Side'})`;
+        } else if (e.category === 'pumping') {
+          badgeColor = "purple";
+          icon = "⚡";
+          title = "Pumping Active";
+        }
+
+        return `
+          <div class="bg-white border-2 border-${badgeColor}-300 p-3.5 rounded-2xl shadow-nara flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+              <span class="text-2xl">${icon}</span>
+              <div>
+                <div class="text-xs font-bold text-nara-text">${title}</div>
+                <div id="liveTimerDisplay_${e.id}" class="text-xl font-mono font-bold text-${badgeColor}-700 mt-0.5">00:00</div>
+              </div>
+            </div>
+            <div class="flex gap-1.5">
+              ${e.category === 'nursing' ? `
+                <button onclick="toggleNursingTimerSide('${e.id}')" class="px-2.5 py-1.5 bg-nara-subtle text-nara-text rounded-xl text-xs font-bold active:scale-95 border border-nara-border">
+                  Switch Side
+                </button>
+              ` : ''}
+              <button onclick="stopActiveTimer('${e.id}')" class="px-3 py-1.5 bg-${badgeColor}-600 hover:bg-${badgeColor}-700 text-white rounded-xl text-xs font-bold shadow-xs active:scale-95">
+                Stop & Log
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Timer Ticker Loop
+    setInterval(() => {
+      const now = Date.now();
+      [runningSleepEvent, runningNursingEvent, runningPumpingEvent].filter(Boolean).forEach(e => {
+        const el = document.getElementById(`liveTimerDisplay_${e.id}`);
+        if (el) {
+          const sec = Math.floor((now - e.timestamp) / 1000);
+          el.innerText = formatTimerSeconds(sec);
+        }
+      });
+      updateSinceLastStats();
+    }, 1000);
+
+    function formatTimerSeconds(totalSec) {
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      return `${h > 0 ? h + ':' : ''}${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    // --- "Since Last" Quick Status Bar ---
+    function updateSinceLastStats() {
+      const now = Date.now();
+
+      // 1. Last Feed (Bottle or Nursing)
+      const lastFeed = allEvents.find(e => (e.category === 'feeding' || e.category === 'bottle' || e.category === 'nursing') && !e.isRunning);
+      if (lastFeed) {
+        const diffMin = Math.floor((now - lastFeed.timestamp) / 60000);
+        document.getElementById('statLastFeed').innerText = formatElapsedMinutes(diffMin);
+        document.getElementById('statLastFeedDetail').innerText = lastFeed.amount ? `${lastFeed.amount} oz` : (lastFeed.subType || 'Feed');
+      } else {
+        document.getElementById('statLastFeed').innerText = "None today";
+        document.getElementById('statLastFeedDetail').innerText = "--";
+      }
+
+      // 2. Sleep / Wake Window
+      if (runningSleepEvent) {
+        const sleepingMin = Math.floor((now - runningSleepEvent.timestamp) / 60000);
+        document.getElementById('statWakeWindow').innerText = `Asleep ${formatElapsedMinutes(sleepingMin)}`;
+        document.getElementById('statWakeDetail').innerText = "Currently napping";
+      } else {
+        const lastSleep = allEvents.find(e => e.category === 'sleep' && !e.isRunning);
+        if (lastSleep) {
+          const awakeMin = Math.floor((now - (lastSleep.endTimestamp || lastSleep.timestamp)) / 60000);
+          document.getElementById('statWakeWindow').innerText = formatElapsedMinutes(awakeMin);
+          document.getElementById('statWakeDetail').innerText = `Woke: ${new Date(lastSleep.endTimestamp || lastSleep.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        } else {
+          document.getElementById('statWakeWindow').innerText = "--";
+          document.getElementById('statWakeDetail').innerText = "--";
+        }
+      }
+
+      // 3. Last Diaper
+      const lastDiaper = allEvents.find(e => e.category === 'diaper');
+      if (lastDiaper) {
+        const diffMin = Math.floor((now - lastDiaper.timestamp) / 60000);
+        document.getElementById('statLastDiaper').innerText = formatElapsedMinutes(diffMin);
+        document.getElementById('statLastDiaperDetail').innerText = lastDiaper.subType || 'Diaper';
+      } else {
+        document.getElementById('statLastDiaper').innerText = "None today";
+        document.getElementById('statLastDiaperDetail').innerText = "--";
+      }
+    }
+
+    function formatElapsedMinutes(mins) {
+      if (mins < 1) return "Just now";
+      if (mins < 60) return `${mins}m ago`;
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return `${h}h ${m}m ago`;
+    }
+
+    // --- Recent Activity List (Home Tab) ---
+    function renderRecentList() {
+      const container = document.getElementById('activityRecentList');
+      const recent = allEvents.slice(0, 6);
+
+      if (recent.length === 0) {
+        container.innerHTML = '<div class="text-center py-6 text-xs text-nara-muted">No activities logged yet.</div>';
+        return;
+      }
+
+      container.innerHTML = recent.map(e => createEventCardHTML(e)).join('');
+    }
+
+    // --- History Filter System ---
+    window.filterHistoryCategory = (cat) => {
+      currentHistoryFilter = cat;
+      const buttons = ['all', 'bottle', 'nursing', 'sleep', 'diaper', 'solids', 'health', 'growth'];
+      buttons.forEach(b => {
+        const btn = document.getElementById(`btnFilter_${b}`);
+        if (btn) {
+          if (b === cat) {
+            btn.className = "px-3 py-1 rounded-full text-xs font-bold bg-stone-800 text-white shadow-2xs whitespace-nowrap";
+          } else {
+            btn.className = "px-3 py-1 rounded-full text-xs font-medium bg-white border border-nara-border text-nara-muted hover:text-nara-text whitespace-nowrap";
+          }
+        }
+      });
+      renderDayGroupedHistory();
+    };
+
+    // --- Day-Grouped History Feed ---
+    function renderDayGroupedHistory() {
+      document.getElementById('historyTotalCount').innerText = `${allEvents.length} records`;
+      const container = document.getElementById('historyDayGroupedFeed');
+
+      let filtered = allEvents;
+      if (currentHistoryFilter !== 'all') {
+        filtered = allEvents.filter(e => {
+          if (currentHistoryFilter === 'bottle') return e.category === 'bottle' || e.category === 'feeding';
+          return e.category === currentHistoryFilter;
+        });
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="text-center py-10 text-xs text-nara-muted">No matching records found.</div>';
+        return;
+      }
+
+      // Group by date
+      const groups = {};
+      filtered.forEach(e => {
+        const d = new Date(e.timestamp);
+        const key = d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(e);
+      });
+
+      const todayStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+      const yesterdayDate = new Date();
+      yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+      const yesterdayStr = yesterdayDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+
+      container.innerHTML = Object.keys(groups).map(dateKey => {
+        const events = groups[dateKey];
+        let label = dateKey;
+        if (dateKey === todayStr) label = `Today • ${dateKey}`;
+        else if (dateKey === yesterdayStr) label = `Yesterday • ${dateKey}`;
+
+        // Compute daily rollup totals
+        let totalSleepMin = 0;
+        let daySleepMin = 0;
+        let nightSleepMin = 0;
+        let totalBottleOz = 0;
+        let wetCount = 0;
+        let dirtyCount = 0;
+
+        events.forEach(e => {
+          if (e.category === 'sleep' && e.durationMinutes) {
+            totalSleepMin += Number(e.durationMinutes);
+            if (e.subType === 'Night Sleep') nightSleepMin += Number(e.durationMinutes);
+            else daySleepMin += Number(e.durationMinutes);
+          }
+          if ((e.category === 'bottle' || e.category === 'feeding') && e.amount) totalBottleOz += Number(e.amount);
+          if (e.category === 'diaper') {
+            const sub = (e.subType || '').toLowerCase();
+            if (sub.includes('wet')) wetCount++;
+            if (sub.includes('dirty')) dirtyCount++;
+            if (sub.includes('both')) { wetCount++; dirtyCount++; }
+          }
+        });
+
+        const sleepH = Math.floor(totalSleepMin / 60);
+        const sleepM = totalSleepMin % 60;
+
+        return `
+          <div class="space-y-2">
+            <!-- Date Header -->
+            <div class="sticky top-14 bg-nara-bg/95 backdrop-blur-xs py-1 z-20 flex justify-between items-baseline px-1">
+              <span class="text-xs font-bold text-nara-text uppercase tracking-wider">${label}</span>
+              <span class="text-[11px] text-nara-muted font-mono">${events.length} logs</span>
+            </div>
+
+            <!-- Nara Daily Summary Card -->
+            <div class="bg-white p-2.5 rounded-2xl border border-nara-border shadow-nara text-xs grid grid-cols-3 text-center divide-x divide-nara-border/60">
+              <div>
+                <span class="text-[10px] text-nara-muted block">Total Sleep</span>
+                <span class="font-bold text-indigo-700">${sleepH}h ${sleepM}m</span>
+                <span class="text-[9px] text-nara-muted block">(${Math.floor(daySleepMin/60)}h naps • ${Math.floor(nightSleepMin/60)}h night)</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-nara-muted block">Bottles</span>
+                <span class="font-bold text-amber-700">${totalBottleOz.toFixed(1)} oz</span>
+                <span class="text-[9px] text-nara-muted block">fluid total</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-nara-muted block">Diapers</span>
+                <span class="font-bold text-teal-700">${wetCount}W • ${dirtyCount}D</span>
+                <span class="text-[9px] text-nara-muted block">${events.filter(x => x.category==='diaper').length} total</span>
+              </div>
+            </div>
+
+            <!-- Event Cards -->
+            <div class="space-y-1.5">
+              ${events.map(e => createEventCardHTML(e)).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // --- Helper: Single Event Card HTML ---
+    function createEventCardHTML(e) {
+      let icon = "📝";
+      let badgeBg = "bg-stone-100 text-stone-700 border-stone-200";
+      let title = e.category || "Activity";
+
+      if (e.category === 'bottle' || e.category === 'feeding') {
+        icon = "🍼";
+        badgeBg = "bg-amber-50 text-amber-800 border-amber-200";
+        title = `Bottle • ${e.subType || 'Milk'}`;
+      } else if (e.category === 'nursing') {
+        icon = "🤱";
+        badgeBg = "bg-rose-50 text-rose-800 border-rose-200";
+        title = `Nursing • ${e.subType || 'Session'}`;
+      } else if (e.category === 'sleep') {
+        icon = "💤";
+        badgeBg = "bg-indigo-50 text-indigo-800 border-indigo-200";
+        title = e.subType || "Sleep / Nap";
+      } else if (e.category === 'diaper') {
+        icon = "💧";
+        badgeBg = "bg-teal-50 text-teal-800 border-teal-200";
+        title = `Diaper • ${e.subType || 'Change'}`;
+      } else if (e.category === 'solids') {
+        icon = "🥣";
+        badgeBg = "bg-orange-50 text-orange-800 border-orange-200";
+        title = `Solids • ${e.subType || 'Meal'}`;
+      } else if (e.category === 'pumping') {
+        icon = "⚡";
+        badgeBg = "bg-purple-50 text-purple-800 border-purple-200";
+        title = `Pumping • ${e.subType || 'Output'}`;
+      } else if (e.category === 'health') {
+        icon = "💊";
+        badgeBg = "bg-rose-50 text-rose-800 border-rose-200";
+        title = e.subType || "Health / Meds";
+      } else if (e.category === 'routine') {
+        icon = "🧸";
+        badgeBg = "bg-stone-100 text-stone-800 border-stone-200";
+        title = e.subType || "Routine";
+      } else if (e.category === 'growth') {
+        icon = "📏";
+        badgeBg = "bg-yellow-50 text-yellow-800 border-yellow-200";
+        title = "Growth Measurement";
+      }
+
+      const timeStr = new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      return `
+        <div onclick="openEditRecordModal('${e.id}')" class="bg-white p-3 rounded-2xl border border-nara-border hover:border-stone-400 cursor-pointer shadow-nara flex justify-between items-center transition active:scale-[0.99]">
+          <div class="flex items-center space-x-3">
+            <span class="w-9 h-9 rounded-xl ${badgeBg} border flex items-center justify-center text-base shadow-xs">
+              ${icon}
+            </span>
+            <div>
+              <div class="text-xs font-bold text-nara-text capitalize">${title}</div>
+              <div class="text-[11px] text-nara-muted flex items-center flex-wrap gap-1.5 mt-0.5">
+                ${e.amount ? `<span class="font-semibold text-amber-700">${e.amount} oz</span>` : ''}
+                ${e.durationMinutes ? `<span class="font-medium text-indigo-600">${e.durationMinutes}m</span>` : ''}
+                ${e.consistency ? `<span class="text-teal-700 font-medium">${e.consistency}</span>` : ''}
+                ${e.color ? `<span class="text-stone-600">(${e.color})</span>` : ''}
+                ${e.rash ? `<span class="text-rose-600 font-bold">Rash Present</span>` : ''}
+                ${e.foodItems ? `<span class="font-medium text-orange-800">${e.foodItems}</span>` : ''}
+                ${e.reaction ? `<span class="text-orange-700">(${e.reaction})</span>` : ''}
+                ${e.weightLbs ? `<span class="text-amber-800 font-semibold">${e.weightLbs} lbs ${e.weightOz || 0} oz</span>` : ''}
+                ${e.heightInches ? `<span class="text-indigo-800">${e.heightInches}"</span>` : ''}
+                ${e.notes ? `<span class="italic text-stone-500 truncate max-w-[140px]">"${e.notes}"</span>` : ''}
+              </div>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="text-[11px] font-mono text-nara-muted">${timeStr}</span>
+            <span class="block text-[9px] text-nara-muted/70">Edit</span>
+          </div>
+        </div>
+      `;
+    }
+
+    // --- MODAL ENGINE (SLIDING BOTTOM SHEET) ---
+    window.openLoggerModal = (category) => {
+      activeEditingEventId = null;
+      currentModalCategory = category;
+
+      document.getElementById('btnModalDelete').classList.add('hidden');
+      document.getElementById('btnModalSave').innerText = "Save Activity";
+      document.getElementById('modalInputNotes').value = "";
+
+      // Default timestamp = current local time formatted for datetime-local
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      document.getElementById('modalInputTimestamp').value = now.toISOString().slice(0, 16);
+
+      renderModalCategoryFields(category);
+
+      const backdrop = document.getElementById('modalBackdrop');
+      const sheet = document.getElementById('modalSheet');
+      backdrop.classList.remove('hidden');
+      setTimeout(() => {
+        backdrop.classList.remove('opacity-0');
+        sheet.classList.remove('translate-y-full');
+      }, 10);
+    };
+
+    window.openEditRecordModal = (eventId) => {
+      const e = allEvents.find(item => item.id === eventId);
+      if (!e) return;
+
+      activeEditingEventId = eventId;
+      currentModalCategory = e.category || 'diaper';
+
+      document.getElementById('btnModalDelete').classList.remove('hidden');
+      document.getElementById('btnModalSave').innerText = "Update Record";
+      document.getElementById('modalInputNotes').value = e.notes || "";
+
+      // Set timestamp
+      const d = new Date(e.timestamp);
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      document.getElementById('modalInputTimestamp').value = d.toISOString().slice(0, 16);
+
+      renderModalCategoryFields(currentModalCategory, e);
+
+      const backdrop = document.getElementById('modalBackdrop');
+      const sheet = document.getElementById('modalSheet');
+      backdrop.classList.remove('hidden');
+      setTimeout(() => {
+        backdrop.classList.remove('opacity-0');
+        sheet.classList.remove('translate-y-full');
+      }, 10);
+    };
+
+    window.closeLoggerModal = () => {
+      const backdrop = document.getElementById('modalBackdrop');
+      const sheet = document.getElementById('modalSheet');
+      backdrop.classList.add('opacity-0');
+      sheet.classList.add('translate-y-full');
+      setTimeout(() => {
+        backdrop.classList.add('hidden');
+      }, 280);
+    };
+
+    window.adjustModalTime = (minsDelta) => {
+      const input = document.getElementById('modalInputTimestamp');
+      let targetDate = new Date();
+      if (minsDelta !== 0) {
+        targetDate = new Date(Date.now() + (minsDelta * 60000));
+      }
+      targetDate.setMinutes(targetDate.getMinutes() - targetDate.getTimezoneOffset());
+      input.value = targetDate.toISOString().slice(0, 16);
+    };
+
+    // --- Dynamic Form Renderer per Category ---
+    function renderModalCategoryFields(cat, existing = {}) {
+      const titleEl = document.getElementById('modalTitle');
+      const subEl = document.getElementById('modalSubtitle');
+      const container = document.getElementById('modalDynamicFields');
+
+      if (cat === 'bottle') {
+        titleEl.innerText = "Log Bottle Feeding";
+        subEl.innerText = "Record fluid ounces and type";
+        selectedBottleAmount = existing.amount || 4.0;
+        selectedBottleType = existing.subType || "Formula";
+
+        container.innerHTML = `
+          <div>
+            <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Fluid Type</label>
+            <div class="grid grid-cols-4 gap-1.5 text-xs font-semibold">
+              <button type="button" onclick="setModalBottleType('Formula')" id="btnBottleFormula" class="py-2.5 rounded-xl border ${selectedBottleType === 'Formula' ? 'bg-amber-100 border-amber-300 text-amber-900 font-bold' : 'bg-white border-nara-border text-nara-muted'}">Formula</button>
+              <button type="button" onclick="setModalBottleType('Breast Milk')" id="btnBottleMilk" class="py-2.5 rounded-xl border ${selectedBottleType === 'Breast Milk' ? 'bg-amber-100 border-amber-300 text-amber-900 font-bold' : 'bg-white border-nara-border text-nara-muted'}">Breast Milk</button>
+              <button type="button" onclick="setModalBottleType('Cow Milk')" id="btnBottleCow" class="py-2.5 rounded-xl border ${selectedBottleType === 'Cow Milk' ? 'bg-amber-100 border-amber-300 text-amber-900 font-bold' : 'bg-white border-nara-border text-nara-muted'}">Cow Milk</button>
+              <button type="button" onclick="setModalBottleType('Water')" id="btnBottleWater" class="py-2.5 rounded-xl border ${selectedBottleType === 'Water' ? 'bg-amber-100 border-amber-300 text-amber-900 font-bold' : 'bg-white border-nara-border text-nara-muted'}">Water</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="text-[11px] font-bold text-nara-muted uppercase">Amount (Ounces)</label>
+              <span id="displayBottleAmount" class="text-xl font-bold font-mono text-amber-800">${selectedBottleAmount.toFixed(1)} oz</span>
+            </div>
+            <!-- Increment / Decrement Stepper -->
+            <div class="flex items-center gap-2 mb-2">
+              <button type="button" onclick="stepBottleAmount(-0.5)" class="w-12 py-2.5 bg-nara-subtle rounded-xl text-lg font-bold border border-nara-border text-nara-text active:scale-95">-</button>
+              <div class="flex-1 grid grid-cols-4 gap-1 text-xs font-bold text-center">
+                <button type="button" onclick="setBottleAmount(2.0)" class="py-2 bg-white border border-nara-border rounded-lg active:scale-95">2 oz</button>
+                <button type="button" onclick="setBottleAmount(4.0)" class="py-2 bg-white border border-nara-border rounded-lg active:scale-95">4 oz</button>
+                <button type="button" onclick="setBottleAmount(5.0)" class="py-2 bg-white border border-nara-border rounded-lg active:scale-95">5 oz</button>
+                <button type="button" onclick="setBottleAmount(6.0)" class="py-2 bg-white border border-nara-border rounded-lg active:scale-95">6 oz</button>
+              </div>
+              <button type="button" onclick="stepBottleAmount(+0.5)" class="w-12 py-2.5 bg-nara-subtle rounded-xl text-lg font-bold border border-nara-border text-nara-text active:scale-95">+</button>
+            </div>
+          </div>
+        `;
+      } else if (cat === 'diaper') {
+        titleEl.innerText = "Log Diaper Change";
+        subEl.innerText = "Wetness, stool consistency, color, & skin";
+        selectedDiaperStatus = existing.subType || "Wet";
+        selectedStoolColor = existing.color || "Yellow";
+        selectedStoolConsistency = existing.consistency || "Soft";
+
+        const colors = ["Yellow", "Brown", "Green", "Black", "Red"];
+        const consistencies = ["Seedy", "Loose", "Soft", "Formed", "Hard"];
+
+        container.innerHTML = `
+          <div>
+            <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Status</label>
+            <div class="grid grid-cols-4 gap-2 text-xs font-semibold">
+              <button type="button" onclick="setModalDiaperStatus('Wet')" id="btnDiaperWet" class="py-3 rounded-xl border flex flex-col items-center gap-1 ${selectedDiaperStatus === 'Wet' ? 'bg-teal-100 border-teal-300 text-teal-900 font-bold' : 'bg-white border-nara-border text-nara-muted'}">
+                <span>💧</span><span>Wet</span>
+              </button>
+              <button type="button" onclick="setModalDiaperStatus('Dirty')" id="btnDiaperDirty" class="py-3 rounded-xl border flex flex-col items-center gap-1 ${selectedDiaperStatus === 'Dirty' ? 'bg-teal-100 border-teal-300 text-teal-900 font-bold' : 'bg-white border-nara-border text-nara-muted'}">
+                <span>💩</span><span>Dirty</span>
+              </button>
+              <button type="button" onclick="setModalDiaperStatus('Both')" id="btnDiaperBoth" class="py-3 rounded-xl border flex flex-col items-center gap-1 ${selectedDiaperStatus === 'Both' ? 'bg-teal-100 border-teal-300 text-teal-900 font-bold' : 'bg-white border-nara-border text-nara-muted'}">
+                <span>✨</span><span>Both</span>
+              </button>
+              <button type="button" onclick="setModalDiaperStatus('Dry')" id="btnDiaperDry" class="py-3 rounded-xl border flex flex-col items-center gap-1 ${selectedDiaperStatus === 'Dry' ? 'bg-teal-100 border-teal-300 text-teal-900 font-bold' : 'bg-white border-nara-border text-nara-muted'}">
+                <span>☀️</span><span>Dry</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Stool Consistency Picker -->
+          <div>
+            <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Stool Consistency (If Dirty/Both)</label>
+            <div class="grid grid-cols-5 gap-1 text-[11px] font-medium text-center">
+              ${consistencies.map(c => `
+                <button type="button" onclick="setStoolConsistency('${c}')" id="btnCons_${c}" class="py-1.5 rounded-lg border ${selectedStoolConsistency === c ? 'bg-teal-100 border-teal-300 text-teal-900 font-bold' : 'bg-white border-nara-border text-nara-muted'}">${c}</button>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Stool Color Picker -->
+          <div>
+            <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Stool Color</label>
+            <div class="grid grid-cols-5 gap-1 text-[11px] font-medium text-center">
+              ${colors.map(col => `
+                <button type="button" onclick="setStoolColor('${col}')" id="btnCol_${col}" class="py-1.5 rounded-lg border ${selectedStoolColor === col ? 'bg-amber-100 border-amber-300 text-amber-900 font-bold' : 'bg-white border-nara-border text-nara-muted'}">${col}</button>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Diaper Rash Flag -->
+          <div class="p-3 bg-nara-subtle/50 rounded-2xl border border-nara-border flex justify-between items-center">
+            <div>
+              <span class="text-xs font-bold text-nara-text">Diaper Rash Present</span>
+              <span class="block text-[10px] text-nara-muted">Log for pediatric monitoring</span>
+            </div>
+            <input type="checkbox" id="modalInputRash" ${existing.rash ? 'checked' : ''} class="w-5 h-5 rounded text-amber-600 focus:ring-0">
+          </div>
+        `;
+      } else if (cat === 'sleep') {
+        titleEl.innerText = "Log Sleep & Nap";
+        subEl.innerText = "Day nap or overnight sleep";
+        const isNap = existing.subType !== 'Night Sleep';
+
+        container.innerHTML = `
+          <div>
+            <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Sleep Type</label>
+            <div class="grid grid-cols-2 gap-2 text-xs font-semibold">
+              <button type="button" onclick="setSleepType('Nap')" id="btnSleepNap" class="py-2.5 rounded-xl border ${isNap ? 'bg-indigo-100 border-indigo-300 text-indigo-900 font-bold' : 'bg-white border-nara-border text-nara-muted'}">☀️ Daytime Nap</button>
+              <button type="button" onclick="setSleepType('Night Sleep')" id="btnSleepNight" class="py-2.5 rounded-xl border ${!isNap ? 'bg-indigo-100 border-indigo-300 text-indigo-900 font-bold' : 'bg-white border-nara-border text-nara-muted'}">🌙 Night Sleep</button>
+            </div>
+          </div>
+
+          ${!existing.id ? `
+            <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-2xl flex justify-between items-center">
+              <div>
+                <span class="text-xs font-bold text-indigo-900">Start Live Sleep Timer</span>
+                <span class="block text-[10px] text-indigo-700">Runs live until stopped</span>
+              </div>
+              <button type="button" onclick="startLiveSleepTimer()" class="px-3.5 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold active:scale-95 shadow-xs">
+                Start Timer Now
+              </button>
+            </div>
+            <div class="text-center text-[10px] text-nara-muted font-bold">— OR ENTER PAST DURATION —</div>
+          ` : ''}
+
+          <div>
+            <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Duration (Minutes)</label>
+            <input type="number" id="modalInputSleepDuration" value="${existing.durationMinutes || 60}" class="w-full text-xs p-2.5 bg-white rounded-xl border border-nara-border text-nara-text font-bold">
+          </div>
+        `;
+      } else if (cat === 'nursing') {
+        titleEl.innerText = "Log Breastfeeding";
+        subEl.innerText = "Left and right breast durations";
+        selectedNursingSide = existing.subType ? (existing.subType.includes('Right') ? 'Right' : 'Left') : 'Left';
+
+        container.innerHTML = `
+          <div>
+            <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Starting Side</label>
+            <div class="grid grid-cols-2 gap-2 text-xs font-semibold">
+              <button type="button" onclick="setNursingSide('Left')" id="btnNursingLeftSide" class="py-2.5 rounded-xl border ${selectedNursingSide === 'Left' ? 'bg-rose-100 border-rose-300 text-rose-900 font-bold' : 'bg-white border-nara-border text-nara-muted'}">Left Breast</button>
+              <button type="button" onclick="setNursingSide('Right')" id="btnNursingRightSide" class="py-2.5 rounded-xl border ${selectedNursingSide === 'Right' ? 'bg-rose-100 border-rose-300 text-rose-900 font-bold' : 'bg-white border-nara-border text-nara-muted'}">Right Breast</button>
+            </div>
+          </div>
+
+          ${!existing.id ? `
+            <div class="p-3 bg-rose-50 border border-rose-200 rounded-2xl flex justify-between items-center">
+              <div>
+                <span class="text-xs font-bold text-rose-900">Start Live Nursing Timer</span>
+                <span class="block text-[10px] text-rose-700">Tracks minutes & side switch</span>
+              </div>
+              <button type="button" onclick="startLiveNursingTimer()" class="px-3.5 py-2 bg-rose-600 text-white rounded-xl text-xs font-bold active:scale-95 shadow-xs">
+                Start Timer
+              </button>
+            </div>
+            <div class="text-center text-[10px] text-nara-muted font-bold">— OR ENTER MINUTES —</div>
+          ` : ''}
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Left Mins</label>
+              <input type="number" id="modalInputNursingLeft" value="${existing.leftMinutes || 10}" class="w-full text-xs p-2.5 bg-white rounded-xl border border-nara-border text-nara-text font-bold">
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Right Mins</label>
+              <input type="number" id="modalInputNursingRight" value="${existing.rightMinutes || 10}" class="w-full text-xs p-2.5 bg-white rounded-xl border border-nara-border text-nara-text font-bold">
+            </div>
+          </div>
+        `;
+      } else if (cat === 'solids') {
+        titleEl.innerText = "Log Solids & First Foods";
+        subEl.innerText = "7.5-month weaning & reaction tracking";
+        selectedSolidsMeal = existing.subType || "Breakfast";
+        selectedSolidsReaction = existing.reaction || "Loved it";
+
+        const foodOptions = ["Avocado", "Banana", "Sweet Potato", "Oatmeal", "Applesauce", "Egg", "Yogurt", "Carrots", "Peas", "Peaches", "Puffs", "Chicken", "Broccoli", "Pears"];
+
+        container.innerHTML = `
+          <div>
+            <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Meal</label>
+            <div class="grid grid-cols-4 gap-1 text-xs font-semibold">
+              ${['Breakfast', 'Lunch', 'Dinner', 'Snack'].map(m => `
+                <button type="button" onclick="setSolidsMeal('${m}')" id="btnSolids_${m}" class="py-2 rounded-xl border ${selectedSolidsMeal === m ? 'bg-orange-100 border-orange-300 text-orange-900 font-bold' : 'bg-white border-nara-border text-nara-muted'}">${m}</button>
+              `).join('')}
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Quick Select Foods (Preloaded)</label>
+            <div class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1 border border-nara-border/60 rounded-xl bg-nara-subtle/30">
+              ${foodOptions.map(food => `
+                <button type="button" onclick="toggleSolidFoodChip(this, '${food}')" class="px-2.5 py-1 rounded-full text-xs border border-nara-border bg-white text-nara-text font-medium active:scale-95">
+                  + ${food}
+                </button>
+              `).join('')}
+            </div>
+            <input type="text" id="modalInputSolidsFoodText" value="${existing.foodItems || ''}" placeholder="Selected foods (e.g. Avocado, Sweet Potato)..." class="mt-2 w-full text-xs p-2.5 bg-white rounded-xl border border-nara-border text-nara-text font-semibold">
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Ethan's Reaction</label>
+            <div class="grid grid-cols-4 gap-1 text-center text-xs">
+              <button type="button" onclick="setSolidsReaction('Loved it')" class="p-2 rounded-xl bg-white border border-nara-border hover:bg-orange-50 active:scale-95">
+                <span class="text-base block">😋</span>
+                <span class="text-[10px] font-semibold text-nara-text">Loved it</span>
+              </button>
+              <button type="button" onclick="setSolidsReaction('Okay')" class="p-2 rounded-xl bg-white border border-nara-border hover:bg-orange-50 active:scale-95">
+                <span class="text-base block">🙂</span>
+                <span class="text-[10px] font-semibold text-nara-text">Okay</span>
+              </button>
+              <button type="button" onclick="setSolidsReaction('Disliked')" class="p-2 rounded-xl bg-white border border-nara-border hover:bg-orange-50 active:scale-95">
+                <span class="text-base block">😖</span>
+                <span class="text-[10px] font-semibold text-nara-text">Disliked</span>
+              </button>
+              <button type="button" onclick="setSolidsReaction('Allergic reaction')" class="p-2 rounded-xl bg-white border border-nara-border hover:bg-rose-50 active:scale-95">
+                <span class="text-base block">⚠️</span>
+                <span class="text-[10px] font-semibold text-rose-700">Allergy</span>
+              </button>
+            </div>
+          </div>
+        `;
+      } else if (cat === 'health') {
+        titleEl.innerText = "Log Health & Medication";
+        subEl.innerText = "Medications, temperature, vaccines";
+
+        container.innerHTML = `
+          <div>
+            <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Common Presets</label>
+            <div class="grid grid-cols-2 gap-1.5 text-xs mb-2">
+              <button type="button" onclick="setHealthPreset('Infant Tylenol', '1.25 mL')" class="py-2 px-2.5 rounded-xl border border-nara-border bg-white text-left active:scale-95">
+                <div class="font-bold text-nara-text">Infant Tylenol</div>
+                <div class="text-[10px] text-nara-muted">1.25 mL (pain/fever)</div>
+              </button>
+              <button type="button" onclick="setHealthPreset('Infant Motrin', '1.875 mL')" class="py-2 px-2.5 rounded-xl border border-nara-border bg-white text-left active:scale-95">
+                <div class="font-bold text-nara-text">Infant Motrin</div>
+                <div class="text-[10px] text-nara-muted">1.875 mL</div>
+              </button>
+              <button type="button" onclick="setHealthPreset('Vitamin D Drops', '1 drop')" class="py-2 px-2.5 rounded-xl border border-nara-border bg-white text-left active:scale-95">
+                <div class="font-bold text-nara-text">Vitamin D Drops</div>
+                <div class="text-[10px] text-nara-muted">1 drop (400 IU)</div>
+              </button>
+              <button type="button" onclick="setHealthPreset('Gas Relief Drops', '0.3 mL')" class="py-2 px-2.5 rounded-xl border border-nara-border bg-white text-left active:scale-95">
+                <div class="font-bold text-nara-text">Mylicon Gas Drops</div>
+                <div class="text-[10px] text-nara-muted">0.3 mL</div>
+              </button>
+            </div>
+            <input type="text" id="modalInputHealthName" value="${existing.subType || ''}" placeholder="Medication, symptom, or vaccine name..." class="w-full text-xs p-2.5 bg-white rounded-xl border border-nara-border text-nara-text font-semibold">
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Dose / Temp Value</label>
+              <input type="text" id="modalInputHealthDosage" value="${existing.amount || ''}" placeholder="e.g. 1.25 mL or 98.6 °F" class="w-full text-xs p-2.5 bg-white rounded-xl border border-nara-border text-nara-text font-bold">
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Route (If Temp)</label>
+              <select id="modalInputHealthRoute" class="w-full text-xs p-2.5 bg-white rounded-xl border border-nara-border text-nara-text">
+                <option value="Forehead">Forehead / Temporal</option>
+                <option value="Armpit">Armpit / Axillary</option>
+                <option value="Ear">Ear / Tympanic</option>
+                <option value="Rectal">Rectal</option>
+                <option value="Oral">Oral</option>
+              </select>
+            </div>
+          </div>
+        `;
+      } else if (cat === 'pumping') {
+        titleEl.innerText = "Log Pumping Session";
+        subEl.innerText = "Track expressed volume and side split";
+
+        container.innerHTML = `
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Left Output (oz)</label>
+              <input type="number" step="0.5" id="modalInputPumpLeft" value="${existing.leftAmount || 2.0}" class="w-full text-xs p-2.5 bg-white rounded-xl border border-nara-border text-nara-text font-bold">
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Right Output (oz)</label>
+              <input type="number" step="0.5" id="modalInputPumpRight" value="${existing.rightAmount || 2.0}" class="w-full text-xs p-2.5 bg-white rounded-xl border border-nara-border text-nara-text font-bold">
+            </div>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Duration (Minutes)</label>
+            <input type="number" id="modalInputPumpDuration" value="${existing.durationMinutes || 20}" class="w-full text-xs p-2.5 bg-white rounded-xl border border-nara-border text-nara-text">
+          </div>
+        `;
+      } else if (cat === 'routine') {
+        titleEl.innerText = "Log Routine & Milestone";
+        subEl.innerText = "Tummy time, baths, outdoor walk";
+
+        container.innerHTML = `
+          <div>
+            <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Routine Activity</label>
+            <div class="grid grid-cols-3 gap-1.5 text-xs font-semibold mb-2">
+              <button type="button" onclick="setRoutineType('Tummy Time')" class="py-2 rounded-xl border border-nara-border bg-white text-nara-text active:scale-95">🧸 Tummy Time</button>
+              <button type="button" onclick="setRoutineType('Bath')" class="py-2 rounded-xl border border-nara-border bg-white text-nara-text active:scale-95">🛁 Bath</button>
+              <button type="button" onclick="setRoutineType('Outdoor Walk')" class="py-2 rounded-xl border border-nara-border bg-white text-nara-text active:scale-95">🌳 Walk</button>
+              <button type="button" onclick="setRoutineType('Story / Books')" class="py-2 rounded-xl border border-nara-border bg-white text-nara-text active:scale-95">📖 Books</button>
+              <button type="button" onclick="setRoutineType('Teeth Care')" class="py-2 rounded-xl border border-nara-border bg-white text-nara-text active:scale-95">🪥 Teeth</button>
+              <button type="button" onclick="setRoutineType('Playtime')" class="py-2 rounded-xl border border-nara-border bg-white text-nara-text active:scale-95">🧩 Play</button>
+            </div>
+            <input type="text" id="modalInputRoutineName" value="${existing.subType || 'Tummy Time'}" class="w-full text-xs p-2.5 bg-white rounded-xl border border-nara-border text-nara-text font-bold">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Duration (Minutes)</label>
+            <input type="number" id="modalInputRoutineDuration" value="${existing.durationMinutes || 15}" class="w-full text-xs p-2.5 bg-white rounded-xl border border-nara-border text-nara-text font-bold">
+          </div>
+        `;
+      } else if (cat === 'growth') {
+        titleEl.innerText = "Log Growth Measurements";
+        subEl.innerText = "Pediatric checkup vitals";
+
+        container.innerHTML = `
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Weight (Pounds)</label>
+              <input type="number" id="modalInputGrowthLbs" value="${existing.weightLbs || 18}" class="w-full text-xs p-2.5 bg-white rounded-xl border border-nara-border text-nara-text font-bold">
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Weight (Ounces)</label>
+              <input type="number" id="modalInputGrowthOz" value="${existing.weightOz || 4}" class="w-full text-xs p-2.5 bg-white rounded-xl border border-nara-border text-nara-text font-bold">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Length / Height (Inches)</label>
+              <input type="number" step="0.25" id="modalInputGrowthHeight" value="${existing.heightInches || 27.5}" class="w-full text-xs p-2.5 bg-white rounded-xl border border-nara-border text-nara-text font-bold">
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-nara-muted uppercase mb-1">Head Circ. (Inches)</label>
+              <input type="number" step="0.25" id="modalInputGrowthHead" value="${existing.headInches || 17.5}" class="w-full text-xs p-2.5 bg-white rounded-xl border border-nara-border text-nara-text font-bold">
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // Modal Helper Setters
+    window.setModalBottleType = (type) => {
+      selectedBottleType = type;
+      ['Formula', 'Breast Milk', 'Cow Milk', 'Water'].forEach(t => {
+        const idMap = { 'Formula': 'btnBottleFormula', 'Breast Milk': 'btnBottleMilk', 'Cow Milk': 'btnBottleCow', 'Water': 'btnBottleWater' };
+        const b = document.getElementById(idMap[t]);
+        if (b) {
+          if (t === type) b.className = "py-2.5 rounded-xl border bg-amber-100 border-amber-300 text-amber-900 font-bold";
+          else b.className = "py-2.5 rounded-xl border bg-white border-nara-border text-nara-muted";
+        }
+      });
+    };
+    window.setBottleAmount = (amt) => {
+      selectedBottleAmount = amt;
+      document.getElementById('displayBottleAmount').innerText = `${amt.toFixed(1)} oz`;
+    };
+    window.stepBottleAmount = (step) => {
+      selectedBottleAmount = Math.max(0.5, Math.min(16, selectedBottleAmount + step));
+      document.getElementById('displayBottleAmount').innerText = `${selectedBottleAmount.toFixed(1)} oz`;
+    };
+    window.setModalDiaperStatus = (status) => {
+      selectedDiaperStatus = status;
+      ['Wet', 'Dirty', 'Both', 'Dry'].forEach(s => {
+        const btn = document.getElementById(`btnDiaper${s}`);
+        if (btn) {
+          if (s === status) btn.className = "py-3 rounded-xl border flex flex-col items-center gap-1 bg-teal-100 border-teal-300 text-teal-900 font-bold";
+          else btn.className = "py-3 rounded-xl border flex flex-col items-center gap-1 bg-white border-nara-border text-nara-muted";
+        }
+      });
+    };
+    window.setStoolConsistency = (c) => {
+      selectedStoolConsistency = c;
+      ["Seedy", "Loose", "Soft", "Formed", "Hard"].forEach(item => {
+        const b = document.getElementById(`btnCons_${item}`);
+        if (b) {
+          if (item === c) b.className = "py-1.5 rounded-lg border bg-teal-100 border-teal-300 text-teal-900 font-bold";
+          else b.className = "py-1.5 rounded-lg border bg-white border-nara-border text-nara-muted";
+        }
+      });
+    };
+    window.setStoolColor = (col) => {
+      selectedStoolColor = col;
+      ["Yellow", "Brown", "Green", "Black", "Red"].forEach(item => {
+        const b = document.getElementById(`btnCol_${item}`);
+        if (b) {
+          if (item === col) b.className = "py-1.5 rounded-lg border bg-amber-100 border-amber-300 text-amber-900 font-bold";
+          else b.className = "py-1.5 rounded-lg border bg-white border-nara-border text-nara-muted";
+        }
+      });
+    };
+    window.setSleepType = (type) => {
+      renderModalCategoryFields('sleep', { subType: type });
+    };
+    window.setNursingSide = (side) => {
+      selectedNursingSide = side;
+      renderModalCategoryFields('nursing', { subType: `Nursing (${side})` });
+    };
+    window.setSolidsMeal = (meal) => {
+      selectedSolidsMeal = meal;
+      ['Breakfast', 'Lunch', 'Dinner', 'Snack'].forEach(m => {
+        const btn = document.getElementById(`btnSolids_${m}`);
+        if (btn) {
+          if (m === meal) btn.className = "py-2 rounded-xl border bg-orange-100 border-orange-300 text-orange-900 font-bold";
+          else btn.className = "py-2 rounded-xl border bg-white border-nara-border text-nara-muted";
+        }
+      });
+    };
+    window.toggleSolidFoodChip = (btn, food) => {
+      const input = document.getElementById('modalInputSolidsFoodText');
+      const current = input.value ? input.value.split(',').map(s => s.trim()) : [];
+      if (!current.includes(food)) {
+        current.push(food);
+        input.value = current.join(', ');
+        btn.classList.add('bg-orange-100', 'border-orange-300', 'text-orange-900', 'font-bold');
+      }
+    };
+    window.setSolidsReaction = (reaction) => {
+      selectedSolidsReaction = reaction;
+      const notes = document.getElementById('modalInputNotes');
+      notes.value = `${reaction} • ${notes.value || ''}`.trim();
+    };
+    window.setHealthPreset = (name, dose) => {
+      document.getElementById('modalInputHealthName').value = name;
+      document.getElementById('modalInputHealthDosage').value = dose;
+    };
+    window.setRoutineType = (name) => {
+      document.getElementById('modalInputRoutineName').value = name;
+    };
+
+    // --- Active Timer Starters ---
+    window.startLiveSleepTimer = async () => {
+      closeLoggerModal();
+      await addDoc(collection(db, FAMILY_PATH), {
+        category: 'sleep',
+        subType: 'Nap',
+        isRunning: true,
+        timestamp: Date.now(),
+        createdAt: new Date().toISOString()
+      });
+      showUndoToast("Nap timer running");
+    };
+
+    window.startLiveNursingTimer = async () => {
+      closeLoggerModal();
+      await addDoc(collection(db, FAMILY_PATH), {
+        category: 'nursing',
+        subType: `Nursing (${selectedNursingSide})`,
+        isRunning: true,
+        timestamp: Date.now(),
+        createdAt: new Date().toISOString()
+      });
+      showUndoToast(`Nursing timer running (${selectedNursingSide})`);
+    };
+
+    window.toggleNursingTimerSide = async (id) => {
+      const e = allEvents.find(item => item.id === id);
+      if (!e) return;
+      const currentSide = (e.subType || '').includes('Right') ? 'Right' : 'Left';
+      const newSide = currentSide === 'Left' ? 'Right' : 'Left';
+      await updateDoc(doc(db, FAMILY_PATH, id), {
+        subType: `Nursing (${newSide})`
+      });
+      showUndoToast(`Switched to ${newSide} side`);
+    };
+
+    window.stopActiveTimer = async (id) => {
+      const e = allEvents.find(item => item.id === id);
+      if (!e) return;
+      const durationMin = Math.max(1, Math.round((Date.now() - e.timestamp) / 60000));
+      await updateDoc(doc(db, FAMILY_PATH, id), {
+        isRunning: false,
+        durationMinutes: durationMin,
+        endTimestamp: Date.now()
+      });
+      showUndoToast(`${e.category} logged (${durationMin}m)`);
+    };
+
+    // --- Modal Save Submission (Create & Update) ---
+    window.handleModalSave = async (evt) => {
+      evt.preventDefault();
+      try {
+        const timestampInput = document.getElementById('modalInputTimestamp').value;
+        const parsedTime = timestampInput ? new Date(timestampInput).getTime() : Date.now();
+        const notes = document.getElementById('modalInputNotes').value;
+
+        const payload = {
+          category: currentModalCategory,
+          timestamp: parsedTime,
+          notes: notes,
+          isRunning: false,
+          updatedAt: new Date().toISOString()
+        };
+
+        if (currentModalCategory === 'bottle') {
+          payload.subType = selectedBottleType;
+          payload.amount = selectedBottleAmount;
+        } else if (currentModalCategory === 'diaper') {
+          payload.subType = selectedDiaperStatus;
+          payload.consistency = selectedStoolConsistency;
+          payload.color = selectedStoolColor;
+          const rash = document.getElementById('modalInputRash').checked;
+          if (rash) payload.rash = true;
+        } else if (currentModalCategory === 'sleep') {
+          const duration = document.getElementById('modalInputSleepDuration');
+          payload.subType = document.getElementById('btnSleepNight').classList.contains('font-bold') ? 'Night Sleep' : 'Nap';
+          payload.durationMinutes = duration ? Number(duration.value) : 60;
+          payload.endTimestamp = parsedTime + (payload.durationMinutes * 60000);
+        } else if (currentModalCategory === 'nursing') {
+          const leftM = Number(document.getElementById('modalInputNursingLeft')?.value || 10);
+          const rightM = Number(document.getElementById('modalInputNursingRight')?.value || 10);
+          payload.leftMinutes = leftM;
+          payload.rightMinutes = rightM;
+          payload.durationMinutes = leftM + rightM;
+          payload.subType = `Nursing (${selectedNursingSide})`;
+        } else if (currentModalCategory === 'solids') {
+          payload.subType = selectedSolidsMeal;
+          payload.foodItems = document.getElementById('modalInputSolidsFoodText').value;
+          payload.reaction = selectedSolidsReaction;
+        } else if (currentModalCategory === 'health') {
+          payload.subType = document.getElementById('modalInputHealthName').value || 'Medication';
+          payload.amount = document.getElementById('modalInputHealthDosage').value;
+          payload.route = document.getElementById('modalInputHealthRoute')?.value || 'Forehead';
+        } else if (currentModalCategory === 'pumping') {
+          payload.leftAmount = Number(document.getElementById('modalInputPumpLeft').value) || 0;
+          payload.rightAmount = Number(document.getElementById('modalInputPumpRight').value) || 0;
+          payload.amount = payload.leftAmount + payload.rightAmount;
+          payload.durationMinutes = Number(document.getElementById('modalInputPumpDuration').value) || 20;
+          payload.subType = `Pumping (${payload.amount} oz)`;
+        } else if (currentModalCategory === 'routine') {
+          payload.subType = document.getElementById('modalInputRoutineName').value || 'Routine';
+          payload.durationMinutes = Number(document.getElementById('modalInputRoutineDuration').value) || 15;
+        } else if (currentModalCategory === 'growth') {
+          payload.weightLbs = Number(document.getElementById('modalInputGrowthLbs').value) || 0;
+          payload.weightOz = Number(document.getElementById('modalInputGrowthOz').value) || 0;
+          payload.heightInches = Number(document.getElementById('modalInputGrowthHeight').value) || 0;
+          payload.headInches = Number(document.getElementById('modalInputGrowthHead').value) || 0;
+          payload.subType = "Pediatric Growth Log";
+        }
+
+        if (activeEditingEventId) {
+          // Update existing doc
+          await updateDoc(doc(db, FAMILY_PATH, activeEditingEventId), payload);
+          showUndoToast("Record updated successfully");
+        } else {
+          // Add new doc
+          payload.createdAt = new Date().toISOString();
+          const docRef = await addDoc(collection(db, FAMILY_PATH), payload);
+          lastCreatedDocId = docRef.id;
+          showUndoToast("Activity logged", true);
+        }
+
+        closeLoggerModal();
+      } catch (err) {
+        alert("Sync error: " + err.message);
+      }
+    };
+
+    // --- Modal Deletion with Confirmation Safeguard ---
+    window.handleModalDelete = async () => {
+      if (!activeEditingEventId) return;
+      const confirmDelete = confirm("Are you sure you want to delete this activity record? This cannot be undone.");
+      if (!confirmDelete) return;
+
+      try {
+        await deleteDoc(doc(db, FAMILY_PATH, activeEditingEventId));
+        closeLoggerModal();
+        showUndoToast("Record permanently deleted");
+      } catch (err) {
+        alert("Delete failed: " + err.message);
+      }
+    };
+
+    // --- 5-Second Undo Toast Engine ---
+    function showUndoToast(msg, allowUndo = false) {
+      const toast = document.getElementById('undoToast');
+      const text = document.getElementById('undoToastText');
+      const btn = document.getElementById('undoToastActionBtn');
+
+      text.innerText = msg;
+      btn.style.display = allowUndo ? "block" : "none";
+
+      toast.classList.remove('translate-y-24', 'opacity-0');
+
+      if (undoTimeout) clearTimeout(undoTimeout);
+      undoTimeout = setTimeout(() => {
+        toast.classList.add('translate-y-24', 'opacity-0');
+        lastCreatedDocId = null;
+      }, 5000);
+    }
+
+    window.executeUndoLastAction = async () => {
+      if (!lastCreatedDocId) return;
+      try {
+        await deleteDoc(doc(db, FAMILY_PATH, lastCreatedDocId));
+        lastCreatedDocId = null;
+        const toast = document.getElementById('undoToast');
+        document.getElementById('undoToastText').innerText = "Action undone";
+        document.getElementById('undoToastActionBtn').style.display = "none";
+        setTimeout(() => toast.classList.add('translate-y-24', 'opacity-0'), 1500);
+      } catch (err) {
+        alert("Undo failed: " + err.message);
+      }
+    };
+
+    // --- Customize Activities Toggles ---
+    window.openCustomizeActivitiesModal = () => {
+      const backdrop = document.getElementById('customizeModalBackdrop');
+      const sheet = document.getElementById('customizeModalSheet');
+      backdrop.classList.remove('hidden');
+      setTimeout(() => {
+        backdrop.classList.remove('opacity-0');
+        sheet.classList.remove('translate-y-full');
+      }, 10);
+    };
+
+    window.closeCustomizeActivitiesModal = () => {
+      const backdrop = document.getElementById('customizeModalBackdrop');
+      const sheet = document.getElementById('customizeModalSheet');
+      backdrop.classList.add('opacity-0');
+      sheet.classList.add('translate-y-full');
+      setTimeout(() => {
+        backdrop.classList.add('hidden');
+      }, 250);
+    };
+
+    window.saveActivityPreferences = () => {
+      const cats = ['bottle', 'nursing', 'sleep', 'diaper', 'solids', 'pumping', 'health', 'routine', 'growth'];
+      cats.forEach(c => {
+        const checked = document.getElementById(`toggle_cat_${c}`).checked;
+        const tile = document.querySelector(`[data-cat="${c}"]`);
+        if (tile) {
+          tile.style.display = checked ? "" : "none";
+        }
+        localStorage.setItem(`nara_pref_${c}`, checked ? "1" : "0");
+      });
+    };
+
+    function loadActivityPreferences() {
+      const cats = ['bottle', 'nursing', 'sleep', 'diaper', 'solids', 'pumping', 'health', 'routine', 'growth'];
+      cats.forEach(c => {
+        const saved = localStorage.getItem(`nara_pref_${c}`);
+        if (saved !== null) {
+          const isChecked = saved === "1";
+          const toggle = document.getElementById(`toggle_cat_${c}`);
+          if (toggle) toggle.checked = isChecked;
+          const tile = document.querySelector(`[data-cat="${c}"]`);
+          if (tile) tile.style.display = isChecked ? "" : "none";
+        }
+      });
+    }
+    loadActivityPreferences();
+
+    // --- Trends Charts (7 & 14 Day Ranges) ---
+    window.setTrendsRange = (days) => {
+      trendsRangeDays = days;
+      document.getElementById('btnTrend7').className = days === 7 ? "px-2.5 py-1 rounded-md bg-white text-nara-text shadow-2xs font-bold" : "px-2.5 py-1 rounded-md text-nara-muted";
+      document.getElementById('btnTrend14').className = days === 14 ? "px-2.5 py-1 rounded-md bg-white text-nara-text shadow-2xs font-bold" : "px-2.5 py-1 rounded-md text-nara-muted";
+      renderTrendsCharts();
+    };
+
+    function renderTrendsCharts() {
+      const sleepBarContainer = document.getElementById('chartSleepBars');
+      const sleepLabels = document.getElementById('chartSleepLabels');
+      const bottleBarContainer = document.getElementById('chartBottleBars');
+      const bottleLabels = document.getElementById('chartBottleLabels');
+      const diaperBarContainer = document.getElementById('chartDiaperBars');
+      const diaperLabels = document.getElementById('chartDiaperLabels');
+
+      const count = trendsRangeDays;
+      const days = [];
+      for (let i = count - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        days.push({
+          dateStr: d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+          dayName: d.toLocaleDateString('en-US', { weekday: 'narrow' }),
+          sleepMin: 0,
+          daySleepMin: 0,
+          nightSleepMin: 0,
+          bottleOz: 0,
+          diaperCount: 0
+        });
+      }
+
+      allEvents.forEach(e => {
+        const d = new Date(e.timestamp).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        const target = days.find(day => day.dateStr === d);
+        if (target) {
+          if (e.category === 'sleep' && e.durationMinutes) {
+            target.sleepMin += Number(e.durationMinutes);
+            if (e.subType === 'Night Sleep') target.nightSleepMin += Number(e.durationMinutes);
+            else target.daySleepMin += Number(e.durationMinutes);
+          }
+          if ((e.category === 'bottle' || e.category === 'feeding') && e.amount) target.bottleOz += Number(e.amount);
+          if (e.category === 'diaper') target.diaperCount++;
+        }
+      });
+
+      // Sleep Chart (Stacked Day vs Night)
+      const maxSleep = Math.max(1, ...days.map(d => d.sleepMin));
+      sleepBarContainer.innerHTML = days.map(d => {
+        const totalPct = Math.round((d.sleepMin / Math.max(maxSleep, 720)) * 100);
+        const nightPct = d.sleepMin > 0 ? (d.nightSleepMin / d.sleepMin) * 100 : 0;
+        const dayPct = 100 - nightPct;
+        const hours = (d.sleepMin / 60).toFixed(1);
+
+        return `
+          <div class="flex-1 flex flex-col items-center justify-end h-full">
+            <span class="text-[9px] font-mono text-indigo-800 font-bold mb-1">${hours > 0 ? hours + 'h' : ''}</span>
+            <div style="height: ${Math.max(4, totalPct)}%;" class="w-full rounded-t-lg overflow-hidden flex flex-col justify-end">
+              <div style="height: ${dayPct}%;" class="w-full bg-indigo-300"></div>
+              <div style="height: ${nightPct}%;" class="w-full bg-indigo-600"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      sleepLabels.innerHTML = days.map(d => `<span class="flex-1 text-center font-bold text-[9px]">${d.dayName}</span>`).join('');
+      const avgSleepM = Math.round(days.reduce((a, b) => a + b.sleepMin, 0) / count);
+      document.getElementById('trendAvgSleep').innerText = `Avg: ${Math.floor(avgSleepM / 60)}h ${avgSleepM % 60}m / day`;
+
+      // Bottle Chart
+      const maxBottle = Math.max(1, ...days.map(d => d.bottleOz));
+      bottleBarContainer.innerHTML = days.map(d => {
+        const pct = Math.round((d.bottleOz / Math.max(maxBottle, 32)) * 100);
+        return `
+          <div class="flex-1 flex flex-col items-center justify-end h-full">
+            <span class="text-[9px] font-mono text-amber-800 font-bold mb-1">${d.bottleOz > 0 ? d.bottleOz.toFixed(0) : ''}</span>
+            <div style="height: ${Math.max(4, pct)}%;" class="w-full bg-amber-500 rounded-t-lg transition-all duration-300"></div>
+          </div>
+        `;
+      }).join('');
+      bottleLabels.innerHTML = days.map(d => `<span class="flex-1 text-center font-bold text-[9px]">${d.dayName}</span>`).join('');
+      const avgBottle = (days.reduce((a, b) => a + b.bottleOz, 0) / count).toFixed(1);
+      document.getElementById('trendAvgBottle').innerText = `Avg: ${avgBottle} oz / day`;
+
+      // Diaper Chart
+      const maxDiaper = Math.max(1, ...days.map(d => d.diaperCount));
+      diaperBarContainer.innerHTML = days.map(d => {
+        const pct = Math.round((d.diaperCount / Math.max(maxDiaper, 8)) * 100);
+        return `
+          <div class="flex-1 flex flex-col items-center justify-end h-full">
+            <span class="text-[9px] font-mono text-teal-800 font-bold mb-1">${d.diaperCount > 0 ? d.diaperCount : ''}</span>
+            <div style="height: ${Math.max(4, pct)}%;" class="w-full bg-teal-500 rounded-t-lg transition-all duration-300"></div>
+          </div>
+        `;
+      }).join('');
+      diaperLabels.innerHTML = days.map(d => `<span class="flex-1 text-center font-bold text-[9px]">${d.dayName}</span>`).join('');
+      const avgDiaper = (days.reduce((a, b) => a + b.diaperCount, 0) / count).toFixed(1);
+      document.getElementById('trendAvgDiaper').innerText = `Avg: ${avgDiaper} / day`;
+    }
+
+    function updateLatestGrowthCard() {
+      const growthEvents = allEvents.filter(e => e.category === 'growth' || e.weightLbs);
+      if (growthEvents.length > 0) {
+        const latest = growthEvents[0];
+        document.getElementById('growthMetricWeight').innerText = `${latest.weightLbs || '--'} lbs ${latest.weightOz || 0} oz`;
+        document.getElementById('growthMetricHeight').innerText = latest.heightInches ? `${latest.heightInches}"` : '--';
+        document.getElementById('growthMetricHead').innerText = latest.headInches ? `${latest.headInches}"` : '--';
+      }
+    }
+
+    // --- CSV Migration (1-Click Nara Baby Import) ---
+    document.getElementById('csvFileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const statusBox = document.getElementById('importStatusBar');
+      statusBox.classList.remove('hidden');
+      statusBox.innerText = "Parsing Nara Baby CSV export...";
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async (results) => {
+          try {
+            const rows = results.data;
+            statusBox.innerText = `Found ${rows.length} records. Uploading in batches to Cloud Firestore...`;
+
+            let batch = writeBatch(db);
+            let count = 0;
+            let total = 0;
+
+            for (let i = 0; i < rows.length; i++) {
+              const r = rows[i];
+              const parsedDate = new Date(r.Date || r.Timestamp || r.time || Date.now()).getTime();
+
+              const docRef = doc(collection(db, FAMILY_PATH));
+              batch.set(docRef, {
+                category: (r.Type || r.category || 'general').toLowerCase(),
+                subType: r.Details || r.subType || '',
+                durationMinutes: parseFloat(r.Duration) || 0,
+                amount: parseFloat(r.Amount) || 0,
+                notes: r.Notes || '',
+                isRunning: false,
+                timestamp: isNaN(parsedDate) ? Date.now() : parsedDate,
+                imported: true
+              });
+
+              count++;
+              total++;
+
+              if (count === 400) {
+                await batch.commit();
+                batch = writeBatch(db);
+                count = 0;
+                statusBox.innerText = `Uploaded ${total} of ${rows.length} records...`;
+              }
+            }
+
+            if (count > 0) {
+              await batch.commit();
+            }
+
+            statusBox.innerText = `✓ Migration complete! Successfully imported ${total} historical records into your database.`;
+          } catch (err) {
+            statusBox.innerText = `Import error: ${err.message}`;
+          }
+        }
+      });
+    });
+
+    // --- CSV Export Backup Function ---
+    window.exportCurrentDataCSV = () => {
+      if (allEvents.length === 0) {
+        alert("No records to export.");
+        return;
+      }
+      const csvData = allEvents.map(e => ({
+        Date: new Date(e.timestamp).toISOString(),
+        Type: e.category,
+        Details: e.subType || '',
+        Amount: e.amount || '',
+        Duration: e.durationMinutes || '',
+        Notes: e.notes || ''
+      }));
+      const csv = Papa.unparse(csvData);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `ethan_tracker_backup_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
+  </script>
+</body>
+</html>
