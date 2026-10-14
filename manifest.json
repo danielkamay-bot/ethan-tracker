@@ -1,16 +1,17 @@
 {
-  "short_name": "EthanTracker",
-  "name": "Ethan Baby Tracker",
+  "short_name": "Ethan Tracker",
+  "name": "Ethan Baby Tracker — Nara Edition",
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/3069/3069172.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": "./index.html",
-  "background_color": "#F9F7F2",
-  "theme_color": "#F9F7F2",
+  "background_color": "#FBF9F5",
+  "theme_color": "#FBF9F5",
   "display": "standalone",
   "orientation": "portrait"
 }
