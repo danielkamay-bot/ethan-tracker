@@ -5,9 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Ethan Tracker &#x2014; Family Baby Care & Milestone Log</title>
   <meta name="theme-color" id="metaThemeColor" content="#FBF9F5">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Ethan Tracker">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="512x512" href="https://cdn-icons-png.flaticon.com/512/3069/3069172.png">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3069/3069172.png">
 
   <!-- Zero-Build Production Dependencies -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -151,9 +155,9 @@
     <!-- ========================================== -->
     <section id="tabActivity" class="space-y-4">
 
-      <!-- "Since Last" Status Tiles -->
-      <div class="grid grid-cols-3 gap-2.5">
-        <!-- Last Feed -->
+      <!-- "Since Last" Status Tiles (2x2 Grid) -->
+      <div class="grid grid-cols-2 gap-2.5">
+        <!-- 1. Last Feed -->
         <div onclick="openSheet('bottle')" class="bg-nara-card p-3 rounded-2xl border border-nara-border shadow-nara active:scale-95 transition-transform cursor-pointer">
           <div class="flex items-center justify-between mb-1">
             <span class="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Last Feed</span>
@@ -163,7 +167,7 @@
           <p id="statLastFeedDetail" class="text-[10px] text-nara-muted truncate">Tap to log</p>
         </div>
 
-        <!-- Wake Window -->
+        <!-- 2. Wake Window -->
         <div onclick="openSheet('sleep')" class="bg-nara-card p-3 rounded-2xl border border-nara-border shadow-nara active:scale-95 transition-transform cursor-pointer">
           <div class="flex items-center justify-between mb-1">
             <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Wake Window</span>
@@ -173,7 +177,7 @@
           <p id="statWakeDetail" class="text-[10px] text-nara-muted truncate">Sleep stretch</p>
         </div>
 
-        <!-- Last Diaper -->
+        <!-- 3. Last Diaper -->
         <div onclick="openSheet('diaper')" class="bg-nara-card p-3 rounded-2xl border border-nara-border shadow-nara active:scale-95 transition-transform cursor-pointer">
           <div class="flex items-center justify-between mb-1">
             <span class="text-[10px] font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400">Last Diaper</span>
@@ -182,6 +186,28 @@
           <div id="statLastDiaper" class="text-sm font-bold text-nara-text truncate">--</div>
           <p id="statLastDiaperDetail" class="text-[10px] text-nara-muted truncate">Dry</p>
         </div>
+
+        <!-- 4. Last Pumped -->
+        <div onclick="openSheet('pump')" class="bg-nara-card p-3 rounded-2xl border border-nara-border shadow-nara active:scale-95 transition-transform cursor-pointer">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">Last Pumped</span>
+            <span class="text-xs">&#x1F95B;</span>
+          </div>
+          <div id="statLastPump" class="text-sm font-bold text-nara-text truncate">--</div>
+          <p id="statLastPumpDetail" class="text-[10px] text-nara-muted truncate">Today's Total: 0oz</p>
+        </div>
+      </div>
+
+      <!-- Optional 1-Tap Android PWA Install Banner (Shown when install prompt is available) -->
+      <div id="pwaInstallBanner" class="hidden bg-rose-50/90 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/70 rounded-2xl p-3 flex items-center justify-between shadow-xs">
+        <div class="flex items-center space-x-2.5 min-w-0">
+          <span class="text-lg shrink-0">&#x1F4F2;</span>
+          <div class="min-w-0">
+            <p class="text-xs font-bold text-nara-text truncate">Install Ethan Tracker App</p>
+            <p class="text-[10px] text-nara-muted truncate">Add full-screen standalone app to your phone</p>
+          </div>
+        </div>
+        <button type="button" onclick="triggerPwaInstall()" class="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shrink-0 shadow-2xs">Install App</button>
       </div>
 
       <!-- Persistent Running Timers Banner (Docker) -->
@@ -550,6 +576,23 @@
         </div>
       </div>
 
+      <!-- Native Android App Installation Card -->
+      <div class="bg-nara-card rounded-2xl p-4 border border-nara-border shadow-nara space-y-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="text-lg">&#x1F4F2;</span>
+            <div>
+              <h2 class="text-sm font-bold text-nara-text">Install as Standalone Phone App</h2>
+              <p id="pwaInstallStatusText" class="text-[11px] text-nara-muted">Works on Android Chrome &amp; Samsung Internet</p>
+            </div>
+          </div>
+          <button type="button" id="btnSettingsInstallPwa" onclick="triggerPwaInstall()" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-600 text-white shadow-2xs">Install App</button>
+        </div>
+        <p class="text-[11px] text-nara-muted">
+          If opened from a text message link, tap the top-right browser menu (<span class="font-bold text-nara-text">&#8942;</span> or <span class="font-bold text-nara-text">&#9776;</span>) and select <span class="font-bold text-nara-text">Open in Chrome / Samsung Internet</span>, then tap <span class="font-bold text-nara-text">Install app</span> (or <span class="font-bold text-nara-text">Add page to &rarr; Apps screen</span>).
+        </p>
+      </div>
+
       <!-- Zero-Leak Firebase Cloud Sync -->
       <div class="bg-nara-card rounded-2xl p-4 border border-nara-border shadow-nara space-y-2.5">
         <div class="flex items-center justify-between">
@@ -569,7 +612,7 @@
 
       <!-- App Specifications & Architecture Info -->
       <div class="p-3 text-center text-[10px] text-nara-muted space-y-1">
-        <p class="font-semibold text-nara-text">Ethan Tracker &#x2014; Phase 5 Complete Release</p>
+        <p class="font-semibold text-nara-text">Ethan Tracker &#x2014; Phase 6 Complete Release</p>
         <p>Zero-Build PWA &#x2022; PapaParse 5.4.1 &#x2022; IndexedDB + Cloud Firestore Live Sync</p>
         <p>Built for Dan Kamay & Melinda &#x2022; Ethan Kamay (Born 2026-02-21)</p>
       </div>
@@ -1463,10 +1506,11 @@
         const lVol = parseFloat(row["[Pump] Left Volume"] || 0);
         const rVol = parseFloat(row["[Pump] Right Volume"] || 0);
         const totVol = parseFloat(row["[Pump] Total Volume"] || 0) || parseFloat((lVol + rVol).toFixed(2));
+        const durSec = parseInt(row["[Pump] Duration (Seconds)"] || 0, 10);
         rec.pump = {
-          durationSeconds: parseInt(row["[Pump] Duration (Seconds)"] || 0, 10),
+          durationSeconds: durSec,
           endDateTime: row["[Pump] End Date/time"] || "",
-          endEpochMs: row["[Pump] End Date/time (Epoch)"] ? parseInt(row["[Pump] End Date/time (Epoch)"], 10) : null,
+          endEpochMs: row["[Pump] End Date/time (Epoch)"] ? parseInt(row["[Pump] End Date/time (Epoch)"], 10) : (durSec ? epochMs + durSec * 1000 : epochMs),
           leftVolume: lVol,
           rightVolume: rVol,
           totalVolume: totVol,
@@ -2612,10 +2656,11 @@
       } else if (cat === "pump") {
         const durInput = document.getElementById("pumpDurationInput");
         const durSec = durInput ? parseInt(durInput.value || 20, 10) * 60 : 1200;
+        const computedEndMs = (epochMs + durSec * 1000 > Date.now() + 60000) ? epochMs : (epochMs + durSec * 1000);
         item.pump = {
           durationSeconds: durSec,
-          endEpochMs: epochMs + durSec * 1000,
-          endDateTime: new Date(epochMs + durSec * 1000).toISOString().replace("T", " ").substring(0, 19),
+          endEpochMs: computedEndMs,
+          endDateTime: new Date(computedEndMs).toISOString().replace("T", " ").substring(0, 19),
           leftVolume: tempPumpLeftVol,
           rightVolume: tempPumpRightVol,
           totalVolume: parseFloat((tempPumpLeftVol + tempPumpRightVol).toFixed(2)),
@@ -3005,6 +3050,65 @@
         if (diaperEl) diaperEl.textContent = "--";
         if (diaperSubEl) diaperSubEl.textContent = "Dry";
       }
+
+      // 4. Last Pumped (Anchored to Pump Session End Time + Today's Total Since 12:00 AM Local Midnight)
+      const pumps = inMemoryActivities.filter(a => a.type === "pump");
+      const pumpEl = document.getElementById("statLastPump");
+      const pumpSubEl = document.getElementById("statLastPumpDetail");
+
+      // Compute Today's Total pumped since 12:00 AM local time
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const todayMidnightMs = startOfToday.getTime();
+      const todaysPumps = pumps.filter(p => {
+        const durMs = (p.pump?.durationSeconds || 0) * 1000;
+        const endMs = p.pump?.endEpochMs || (p.epochMs + durMs);
+        return p.epochMs >= todayMidnightMs || endMs >= todayMidnightMs;
+      });
+      const todayTotalOz = todaysPumps.reduce((sum, p) => {
+        const pObj = p.pump || {};
+        const hasTotal = pObj.totalVolume !== undefined && pObj.totalVolume !== null && pObj.totalVolume !== "";
+        const rawVol = hasTotal
+          ? parseFloat(pObj.totalVolume)
+          : (parseFloat(pObj.leftVolume || 0) + parseFloat(pObj.rightVolume || 0));
+        const vol = isNaN(rawVol) ? 0 : rawVol;
+        return sum + (pObj.unit === "ML" ? vol / 29.5735 : vol);
+      }, 0);
+      const cleanTotalOz = todayTotalOz > 0 ? parseFloat(todayTotalOz.toFixed(1)) : 0;
+
+      // Determine the pump session with the most recent end timestamp
+      let lastPump = null;
+      let latestPumpEndMs = -1;
+      for (let i = 0; i < pumps.length; i++) {
+        const candidate = pumps[i];
+        const durMs = (candidate.pump?.durationSeconds || 0) * 1000;
+        const endMs = candidate.pump?.endEpochMs || (candidate.epochMs + durMs);
+        if (endMs > latestPumpEndMs) {
+          latestPumpEndMs = endMs;
+          lastPump = candidate;
+        }
+      }
+
+      if (activeTimers.pump && activeTimers.pump.isRunning) {
+        if (pumpEl) pumpEl.textContent = "Pumping \u23F1\uFE0F";
+        if (pumpSubEl) pumpSubEl.textContent = `Today's Total: ${cleanTotalOz}oz`;
+      } else if (lastPump) {
+        const pumpAgoMin = Math.max(0, Math.floor((Date.now() - latestPumpEndMs) / (60 * 1000)));
+        if (pumpEl) pumpEl.textContent = `Last Pump ${formatPumpDurationAgo(pumpAgoMin)}`;
+        if (pumpSubEl) pumpSubEl.textContent = `Today's Total: ${cleanTotalOz}oz`;
+      } else {
+        if (pumpEl) pumpEl.textContent = "--";
+        if (pumpSubEl) pumpSubEl.textContent = `Today's Total: ${cleanTotalOz}oz`;
+      }
+    }
+
+    function formatPumpDurationAgo(minutes) {
+      if (minutes < 1) return "Just now";
+      if (minutes < 60) return `${minutes}m`;
+      const h = Math.floor(minutes / 60);
+      const m = minutes % 60;
+      if (h >= 48) return `${Math.floor(h / 24)}d ago`;
+      return `${h}h ${m}m`;
     }
 
     function formatTimeAgo(minutes) {
@@ -3517,14 +3621,70 @@
       showUndoToast("Cloud Sync Disconnected", "Reverted to offline local mode", false);
     }
 
+    // --- PWA INSTALL ENGINE & SERVICE WORKER (Android Chrome & Samsung Internet) ---
+    let deferredPwaInstallPrompt = null;
+
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredPwaInstallPrompt = e;
+      const banner = document.getElementById("pwaInstallBanner");
+      if (banner) banner.classList.remove("hidden");
+      const statusText = document.getElementById("pwaInstallStatusText");
+      if (statusText) statusText.textContent = "Ready for 1-tap standalone install on this phone";
+    });
+
+    window.addEventListener("appinstalled", () => {
+      deferredPwaInstallPrompt = null;
+      const banner = document.getElementById("pwaInstallBanner");
+      if (banner) banner.classList.add("hidden");
+      const statusText = document.getElementById("pwaInstallStatusText");
+      if (statusText) statusText.textContent = "Installed as standalone phone app \u2713";
+      showUndoToast("Ethan Tracker Installed!", "You can now launch Ethan Tracker from your home/apps screen", false);
+    });
+
+    async function triggerPwaInstall() {
+      if (deferredPwaInstallPrompt) {
+        deferredPwaInstallPrompt.prompt();
+        const choice = await deferredPwaInstallPrompt.userChoice;
+        if (choice && choice.outcome === "accepted") {
+          deferredPwaInstallPrompt = null;
+          const banner = document.getElementById("pwaInstallBanner");
+          if (banner) banner.classList.add("hidden");
+        }
+      } else {
+        const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+        if (isStandalone) {
+          showUndoToast("Already Installed!", "Ethan Tracker is currently running as an installed app", false);
+        } else {
+          showUndoToast("Use Browser Menu to Install", "In Chrome tap \u22EE \u2192 'Install app' \u2022 In Samsung Internet tap \u2630 \u2192 'Add page to' \u2192 'Apps screen'", false);
+        }
+      }
+    }
+
+    function registerPwaServiceWorker() {
+      if ("serviceWorker" in navigator && (window.location.protocol === "https:" || window.location.hostname === "localhost")) {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      }
+    }
+
     // --- APPLICATION BOOTSTRAP ---
     window.addEventListener("DOMContentLoaded", async () => {
       initThemeEngine();
+      registerPwaServiceWorker();
       checkUrlForOneTapSyncConfig();
       updateEthanAgeDisplay();
       updateCaregiverUI();
       initTimerTicker();
-      setInterval(updateEthanAgeDisplay, 30000);
+      setInterval(() => {
+        updateEthanAgeDisplay();
+        renderSinceLastDashboard();
+      }, 30000);
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) {
+          updateEthanAgeDisplay();
+          renderSinceLastDashboard();
+        }
+      });
 
       try {
         await initIndexedDB();
